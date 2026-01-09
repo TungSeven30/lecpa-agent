@@ -1,0 +1,57 @@
+# Model Router Configuration
+# All LLM calls are routed through this configuration
+# Change provider/model without code changes
+
+default_provider: anthropic
+default_model: claude-opus-4-5-20251101
+
+# Route specific tasks to specific models
+routes:
+  orchestrator:
+    provider: anthropic
+    model: claude-opus-4-5-20251101
+    max_tokens: 4096
+    temperature: 0.3
+
+  drafting:
+    provider: anthropic
+    model: claude-opus-4-5-20251101
+    max_tokens: 8192
+    temperature: 0.5
+
+  extraction:
+    provider: anthropic
+    model: claude-opus-4-5-20251101
+    max_tokens: 4096
+    temperature: 0.0
+
+  qc:
+    provider: anthropic
+    model: claude-opus-4-5-20251101
+    max_tokens: 4096
+    temperature: 0.2
+
+  research:
+    provider: anthropic
+    model: claude-opus-4-5-20251101
+    max_tokens: 8192
+    temperature: 0.3
+
+# Fallback chain if primary model fails
+fallbacks:
+  - provider: anthropic
+    model: claude-sonnet-4-5-20251101
+
+# Provider-specific settings
+providers:
+  anthropic:
+    api_key_env: ANTHROPIC_API_KEY
+    base_url: https://api.anthropic.com
+    timeout: 120
+    max_retries: 3
+
+# Token limits for context management
+token_limits:
+  max_input_tokens: 180000
+  max_output_tokens: 8192
+  reserve_for_output: 4096

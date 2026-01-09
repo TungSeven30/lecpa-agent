@@ -1,0 +1,68 @@
+{# Template: IRS Notice Response Letter #}
+{# Variables: client_name, client_address, ssn_last4, notice_type, notice_date, tax_year, response_points, attachments, preparer_name, firm_name, firm_address, needed_info (optional) #}
+
+{{ firm_name }}
+{{ firm_address }}
+
+{{ "now" | date("%B %d, %Y") }}
+
+Internal Revenue Service
+{{ irs_address | default("Fresno, CA 93888-0002") }}
+
+**Re: Response to {{ notice_type }}**
+**Taxpayer:** {{ client_name }}
+**SSN:** XXX-XX-{{ ssn_last4 }}
+**Tax Year:** {{ tax_year }}
+**Notice Date:** {{ notice_date }}
+
+Dear Sir or Madam:
+
+We are writing on behalf of our client, {{ client_name }}, in response to the {{ notice_type }} dated {{ notice_date }} regarding the {{ tax_year }} tax year.
+
+{% if response_points %}
+## Response to Notice Items
+
+{% for point in response_points %}
+### {{ point.item }}
+{{ point.response }}
+
+{% endfor %}
+{% endif %}
+
+{% if attachments %}
+## Enclosed Documentation
+
+The following documents are enclosed to support our response:
+
+{% for attachment in attachments %}
+{{ loop.index }}. {{ attachment.name }}{% if attachment.description %} - {{ attachment.description }}{% endif %}
+
+{% endfor %}
+{% endif %}
+
+{% if needed_info %}
+## Information Needed from Client
+
+**Note to Preparer:** The following information is needed to complete this response:
+
+{% for info in needed_info %}
+- [ ] {{ info }}
+{% endfor %}
+
+{% endif %}
+
+We respectfully request that you review the enclosed documentation and adjust the taxpayer's account accordingly. If you have any questions or require additional information, please contact our office at the number below.
+
+Thank you for your attention to this matter.
+
+Sincerely,
+
+{{ preparer_name }}
+{{ firm_name }}
+Phone: {{ firm_phone | default("[PHONE]") }}
+Fax: {{ firm_fax | default("[FAX]") }}
+
+**Enclosures:** {{ attachments | length }} document(s)
+
+---
+*Power of Attorney (Form 2848) on file*

@@ -1,0 +1,52 @@
+# OCR Configuration
+# OCR is fallback-only: triggers when text extraction yields insufficient content
+
+enabled: true
+mode: fallback_only
+
+# Thresholds to trigger OCR fallback
+# If EITHER condition is met, OCR will be triggered
+thresholds:
+  # Minimum average characters per page (below this triggers OCR)
+  min_chars_per_page: 200
+  # Minimum ratio of extracted text bytes to file bytes
+  min_text_ratio: 0.001
+
+# Tesseract OCR settings
+engine: tesseract
+tesseract:
+  # Language(s) for OCR - use + for multiple (e.g., eng+spa)
+  lang: eng
+  # Page segmentation mode:
+  # 0 = Orientation and script detection (OSD) only
+  # 1 = Automatic page segmentation with OSD
+  # 3 = Fully automatic page segmentation, but no OSD (Default)
+  # 6 = Assume a single uniform block of text
+  # 11 = Sparse text. Find as much text as possible in no particular order
+  psm: 6
+  # OCR Engine Mode:
+  # 0 = Legacy engine only
+  # 1 = Neural nets LSTM engine only
+  # 2 = Legacy + LSTM engines
+  # 3 = Default, based on what is available
+  oem: 1
+  # DPI for rendering PDF pages to images
+  dpi: 300
+
+# Image preprocessing before OCR
+preprocessing:
+  # Convert to grayscale
+  grayscale: true
+  # Apply thresholding for cleaner text
+  threshold: true
+  # Remove noise
+  denoise: false
+  # Deskew rotated images
+  deskew: true
+
+# Output settings
+output:
+  # Include confidence scores in output
+  include_confidence: true
+  # Minimum confidence to include text (0-100)
+  min_confidence: 30

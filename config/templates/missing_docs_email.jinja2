@@ -1,0 +1,26 @@
+{# Template: Missing Documents Email #}
+{# Variables: client_name, tax_year, missing_items, preparer_name, firm_name, deadline (optional) #}
+
+Subject: {{ tax_year }} Tax Return - Documents Needed
+
+Dear {{ client_name }},
+
+Thank you for choosing {{ firm_name }} to prepare your {{ tax_year }} tax return. To complete your return, we need the following documents:
+
+**Missing Documents:**
+{% for item in missing_items %}
+- [ ] {{ item.name }}{% if item.description %} - {{ item.description }}{% endif %}
+
+{% endfor %}
+
+{% if deadline %}
+**Please provide these documents by {{ deadline }}** to ensure timely filing.
+{% endif %}
+
+You can upload documents securely through your TaxDome portal, or reply to this email with attachments.
+
+If you have questions about any of these items, please don't hesitate to reach out.
+
+Best regards,
+{{ preparer_name }}
+{{ firm_name }}

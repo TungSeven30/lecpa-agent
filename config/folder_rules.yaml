@@ -1,0 +1,102 @@
+# TaxDome Drive Folder Parsing Rules
+# Defines how to parse folder structure and auto-tag documents
+
+source: taxdome_drive
+
+# Root directories to watch (configured per installation)
+# Use environment variable TAXDOME_DRIVE_ROOT or set here
+roots:
+  - "${TAXDOME_DRIVE_ROOT}"
+  # Example: "X:\\TaxDome Drive\\Clients"
+
+# Client folder naming pattern
+# Examples: "TH4 10 tax Returns - Hioki", "MM7 1602 Martinez LLC"
+client_folder:
+  pattern: "^(?P<client_code>[A-Z0-9]{2,5})\\s+(?P<client_name>.+)$"
+  # Fallback if pattern doesn't match
+  fallback_as_name: true
+
+# Case detection rules (subfolders within client folders)
+case_detection:
+  - name: tax_year_folder
+    pattern: "^(?P<year>20\\d{2})$"
+    case_type: tax_return
+
+  - name: tax_year_with_label
+    pattern: "^(?P<year>20\\d{2})\\s+(?P<label>.+)$"
+    case_type: tax_return
+
+  - name: notice_folder
+    pattern: "(?i)^notices?$"
+    case_type: notice
+
+  - name: correspondence_folder
+    pattern: "(?i)^correspondence$"
+    case_type: correspondence
+
+# Document auto-tagging based on filename
+doc_tags:
+  # Tax forms
+  - match: "(?i)w-?2"
+    tag: W2
+    priority: 10
+
+  - match: "(?i)1099"
+    tag: "1099"
+    priority: 10
+
+  - match: "(?i)k-?1"
+    tag: K1
+    priority: 10
+
+  - match: "(?i)1040"
+    tag: "1040"
+    priority: 5
+
+  - match: "(?i)schedule\\s*[a-z]"
+    tag: SCHEDULE
+    priority: 5
+
+  # IRS notices
+  - match: "(?i)notice|cp\\s?\\d+|lt\\s?\\d+"
+    tag: IRS_NOTICE
+    priority: 10
+
+  # Financial documents
+  - match: "(?i)bank\\s*statement"
+    tag: BANK_STATEMENT
+    priority: 8
+
+  - match: "(?i)brokerage|investment"
+    tag: BROKERAGE
+    priority: 8
+
+  # Other common documents
+  - match: "(?i)organizer"
+    tag: ORGANIZER
+    priority: 5
+
+  - match: "(?i)engagement"
+    tag: ENGAGEMENT_LETTER
+    priority: 5
+
+# File type filters (only process these)
+allowed_extensions:
+  - .pdf
+  - .docx
+  - .doc
+  - .xlsx
+  - .xls
+  - .png
+  - .jpg
+  - .jpeg
+  - .tiff
+  - .tif
+
+# Files/folders to ignore
+ignore_patterns:
+  - ".*"           # Hidden files
+  - "~$*"          # Office temp files
+  - "*.tmp"
+  - "Thumbs.db"
+  - ".DS_Store"
