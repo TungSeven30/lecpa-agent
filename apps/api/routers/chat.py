@@ -2,13 +2,13 @@
 
 from uuid import UUID
 
+from database.session import get_async_db
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from services.agents.orchestrator import OrchestratorAgent, get_orchestrator
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.session import get_async_db
-from services.agents.orchestrator import OrchestratorAgent, get_orchestrator
 from shared.models.document import Citation
 
 router = APIRouter()
@@ -49,10 +49,14 @@ async def chat(
     Supports both streaming (SSE) and non-streaming responses.
     The orchestrator routes to appropriate subagents based on intent.
     """
+    # Convert Pydantic models to dicts for orchestrator
+    messages = [{"role": m.role, "content": m.content} for m in request.messages]
+
     if request.stream:
         return StreamingResponse(
             orchestrator.stream_response(
-                messages=request.messages,
+                messages=messages,
+                db=db,
                 case_id=request.case_id,
                 client_code=request.client_code,
             ),
@@ -61,7 +65,8 @@ async def chat(
 
     # Non-streaming response
     result = await orchestrator.generate_response(
-        messages=request.messages,
+        messages=messages,
+        db=db,
         case_id=request.case_id,
         client_code=request.client_code,
     )

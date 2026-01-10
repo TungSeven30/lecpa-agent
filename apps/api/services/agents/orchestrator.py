@@ -7,9 +7,10 @@ from uuid import UUID
 
 import orjson
 import structlog
-
 from services.model_router import ModelRouter, get_model_router
 from services.search import HybridSearchService, get_search_service
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from shared.models.document import Citation
 
 logger = structlog.get_logger()
@@ -101,6 +102,7 @@ Respond with ONLY the category name, nothing else."""
     async def generate_response(
         self,
         messages: list[dict[str, str]],
+        db: AsyncSession,
         case_id: UUID | None = None,
         client_code: str | None = None,
     ) -> ChatResult:
@@ -108,6 +110,7 @@ Respond with ONLY the category name, nothing else."""
 
         Args:
             messages: Conversation messages
+            db: Database session for document search
             case_id: Optional case context
             client_code: Optional client context
 
@@ -123,13 +126,37 @@ Respond with ONLY the category name, nothing else."""
         logger.info("Classified intent", intent=intent, case_id=case_id)
 
         # Search for relevant context
-        citations = []
+        citations: list[Citation] = []
         context = ""
 
         if intent in {"question", "notice", "qc"}:
-            # Need to search for relevant documents
-            # Note: This is a placeholder - actual implementation would use db session
-            context = "\n\n[Document search would provide context here]"
+            # Search for relevant documents
+            citations = await self.search_service.search(
+                query=last_message,
+                db=db,
+                case_id=case_id,
+                client_code=client_code,
+                top_k=5,
+            )
+
+            if citations:
+                context_parts = []
+                for c in citations:
+                    page_ref = (
+                        f"Page {c.page_start}"
+                        if c.page_start == c.page_end
+                        else f"Pages {c.page_start}-{c.page_end}"
+                    )
+                    context_parts.append(
+                        f"[Doc: {c.document_filename}, {page_ref}]\n{c.snippet}"
+                    )
+                context = "\n\n---\n\n".join(context_parts)
+
+                logger.info(
+                    "Found relevant documents",
+                    citation_count=len(citations),
+                    case_id=case_id,
+                )
 
         # Build messages with system prompt and context
         full_messages = [{"role": "user", "content": msg["content"]} for msg in messages]
@@ -156,6 +183,7 @@ User question: {full_messages[-1]['content']}"""
     async def stream_response(
         self,
         messages: list[dict[str, str]],
+        db: AsyncSession,
         case_id: UUID | None = None,
         client_code: str | None = None,
     ) -> AsyncGenerator[str, None]:
@@ -163,6 +191,7 @@ User question: {full_messages[-1]['content']}"""
 
         Args:
             messages: Conversation messages
+            db: Database session for document search
             case_id: Optional case context
             client_code: Optional client context
 
@@ -179,8 +208,44 @@ User question: {full_messages[-1]['content']}"""
         # Send intent as first event
         yield f"event: intent\ndata: {intent}\n\n"
 
+        # Search for relevant context
+        citations: list[Citation] = []
+        context = ""
+
+        if intent in {"question", "notice", "qc"}:
+            citations = await self.search_service.search(
+                query=last_message,
+                db=db,
+                case_id=case_id,
+                client_code=client_code,
+                top_k=5,
+            )
+
+            if citations:
+                context_parts = []
+                for c in citations:
+                    page_ref = (
+                        f"Page {c.page_start}"
+                        if c.page_start == c.page_end
+                        else f"Pages {c.page_start}-{c.page_end}"
+                    )
+                    context_parts.append(
+                        f"[Doc: {c.document_filename}, {page_ref}]\n{c.snippet}"
+                    )
+                context = "\n\n---\n\n".join(context_parts)
+
+                # Send citations as event before response
+                citations_data = [c.model_dump() for c in citations]
+                yield f"event: citations\ndata: {orjson.dumps(citations_data).decode()}\n\n"
+
         # Build messages
         full_messages = [{"role": "user", "content": msg["content"]} for msg in messages]
+
+        if context:
+            full_messages[-1]["content"] = f"""Context from documents:
+{context}
+
+User question: {full_messages[-1]['content']}"""
 
         # Stream the response
         async for chunk in self.model_router.stream(

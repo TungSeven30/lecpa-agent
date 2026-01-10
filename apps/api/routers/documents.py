@@ -1,17 +1,22 @@
 """Documents router."""
 
+import os
 import uuid
 from uuid import UUID
 
+from celery import Celery
+from database.models import Case, Document
+from database.session import get_async_db
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from services.storage import StorageService, get_storage_service
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import Case, Document
-from database.session import get_async_db
-from services.storage import StorageService, get_storage_service
 from shared.models.document import Document as DocumentSchema
-from shared.models.document import DocumentCreate, DocumentUpdate
+from shared.models.document import DocumentUpdate
+
+# Celery client for triggering ingestion tasks
+celery_app = Celery(broker=os.environ.get("REDIS_URL", "redis://localhost:6379/0"))
 
 router = APIRouter()
 
@@ -106,7 +111,8 @@ async def upload_document(
     await db.commit()
     await db.refresh(document)
 
-    # TODO: Queue ingestion task
+    # Queue ingestion task
+    celery_app.send_task("tasks.ingest.ingest_document", args=[str(document.id)])
 
     return DocumentSchema.model_validate(document)
 
