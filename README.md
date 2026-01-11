@@ -1,4 +1,4 @@
-# Krystal Le Agent - AI Assistant for CPA Firms
+# Le CPA Agent - AI Assistant for CPA Firms
 
 > **Your AI-Powered Tax Season Companion**
 > An intelligent assistant designed specifically for CPAs and tax professionals to streamline document review, client communication, and tax return preparation.
@@ -30,7 +30,7 @@
 
 ## 🎯 What It Does
 
-Krystal Le Agent is an **internal AI assistant** that helps CPAs and tax professionals work faster and smarter during tax season. Think of it as having an experienced associate who:
+Le CPA Agent is an **internal AI assistant** that helps CPAs and tax professionals work faster and smarter during tax season. Think of it as having an experienced associate who:
 
 - **Instantly searches** through thousands of client documents to find specific information
 - **Answers questions** about client files with exact citations (page numbers, document names)
@@ -60,7 +60,7 @@ Tax season is overwhelming:
 
 ### The Solution
 
-Krystal Le Agent automates these tasks:
+Le CPA Agent automates these tasks:
 - ✅ **Instant search** across all client documents with natural language questions
 - ✅ **Auto-generated emails** for missing documents (personalized per client)
 - ✅ **Document extraction** pulls data from tax forms automatically
@@ -261,7 +261,7 @@ Choose the deployment that fits your firm:
 
 ### Simple Overview (Non-Technical)
 
-Think of Krystal Le Agent as a **highly organized associate** who has read every single document in your firm and can instantly recall any information:
+Think of Le CPA Agent as a **highly organized associate** who has read every single document in your firm and can instantly recall any information:
 
 1. **📤 You upload documents** (PDFs, Word files, Excel spreadsheets)
 2. **🤖 The AI reads and indexes** every page, every number, every detail
@@ -335,7 +335,7 @@ Contact us for white-glove setup:
 - We'll set everything up on your NAS or cloud
 - Train your staff on how to use it
 - Provide ongoing support
-- Email: support@example.com
+- Email: tung@seven30capital.com
 
 ---
 
@@ -941,8 +941,8 @@ docker stats --no-stream
 ### Contact
 
 For setup assistance, training, or custom features:
-- **Email:** support@example.com
-- **Phone:** (555) 123-4567
+- **Email:** tung@seven30capital.com
+- **Phone:** 312-395-0003
 - **Hours:** Monday-Friday, 9am-5pm EST
 
 ### Contributing
@@ -980,7 +980,7 @@ Submit issues or pull requests on GitHub.
 
 ## 📄 License
 
-**Internal Use Only** - Krystal Le CPA
+**Internal Use Only** - Le CPA
 Not licensed for distribution or resale.
 
 ---
