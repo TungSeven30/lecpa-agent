@@ -21,6 +21,9 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "httpx>=0.26.0",
     "orjson>=3.9.0",
+    "celery[redis]>=5.3.0",
+    "redis>=5.0.0",
+    "aiofiles>=24.1.0",
     "shared",
 ]
 
@@ -40,6 +43,11 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.11",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["database", "routers", "services"]

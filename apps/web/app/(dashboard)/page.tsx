@@ -8,8 +8,9 @@ import {
     MessageSquare,
     Clock,
     AlertCircle,
+    ChevronRight,
 } from 'lucide-react';
-import { Card, CardContent, Badge } from '@/components/ui';
+import { Card, CardContent, Badge, Skeleton } from '@/components/ui';
 import { api } from '@/lib/api';
 
 interface Stat {
@@ -66,30 +67,39 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="p-8">
+        <div className="p-6 lg:p-8">
             <div className="mb-8">
                 <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-                <p className="text-muted-foreground">
+                <p className="mt-1 text-muted-foreground">
                     Welcome back to Le CPA Agent
                 </p>
             </div>
 
             {/* Stats Grid */}
-            <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
                 {stats.map((stat) => (
-                    <Card key={stat.name}>
-                        <CardContent className="p-6">
+                    <Card
+                        key={stat.name}
+                        className="transition-shadow duration-200 hover:shadow-md"
+                    >
+                        <CardContent className="p-5">
                             <div className="flex items-center">
-                                <div className={`rounded-lg p-3 ${stat.iconClasses}`}>
+                                <div
+                                    className={`flex h-12 w-12 items-center justify-center rounded-lg ${stat.iconClasses}`}
+                                >
                                     <stat.icon className="h-6 w-6" aria-hidden="true" />
                                 </div>
                                 <div className="ml-4">
                                     <p className="text-sm font-medium text-muted-foreground">
                                         {stat.name}
                                     </p>
-                                    <p className="text-2xl font-semibold text-foreground">
-                                        {casesLoading ? '...' : stat.value}
-                                    </p>
+                                    {casesLoading ? (
+                                        <Skeleton className="mt-1 h-7 w-10" />
+                                    ) : (
+                                        <p className="text-2xl font-semibold tabular-nums text-foreground">
+                                            {stat.value}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>
@@ -103,51 +113,60 @@ export default function DashboardPage() {
                     Quick Actions
                 </h2>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <Link href="/chat">
-                        <Card className="cursor-pointer transition-shadow hover:shadow-md">
-                            <CardContent className="flex items-center p-6">
-                                <MessageSquare
-                                    className="h-8 w-8 text-primary-600"
-                                    aria-hidden="true"
-                                />
-                                <div className="ml-4">
+                    <Link href="/chat" className="group">
+                        <Card className="h-full transition-all duration-200 group-hover:shadow-md group-hover:border-primary-200 dark:group-hover:border-primary-800">
+                            <CardContent className="flex items-center p-5">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-100 text-primary-600 transition-colors group-hover:bg-primary-200 dark:bg-primary-900 dark:text-primary-400 dark:group-hover:bg-primary-800">
+                                    <MessageSquare className="h-6 w-6" aria-hidden="true" />
+                                </div>
+                                <div className="ml-4 flex-1">
                                     <p className="font-medium text-foreground">Start Chat</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        Ask questions about clients or documents
+                                    <p className="mt-0.5 text-sm text-muted-foreground">
+                                        Ask questions about clients
                                     </p>
                                 </div>
+                                <ChevronRight
+                                    className="h-5 w-5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                                    aria-hidden="true"
+                                />
                             </CardContent>
                         </Card>
                     </Link>
-                    <Link href="/cases">
-                        <Card className="cursor-pointer transition-shadow hover:shadow-md">
-                            <CardContent className="flex items-center p-6">
-                                <Briefcase
-                                    className="h-8 w-8 text-primary-600"
-                                    aria-hidden="true"
-                                />
-                                <div className="ml-4">
+                    <Link href="/cases" className="group">
+                        <Card className="h-full transition-all duration-200 group-hover:shadow-md group-hover:border-primary-200 dark:group-hover:border-primary-800">
+                            <CardContent className="flex items-center p-5">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-100 text-primary-600 transition-colors group-hover:bg-primary-200 dark:bg-primary-900 dark:text-primary-400 dark:group-hover:bg-primary-800">
+                                    <Briefcase className="h-6 w-6" aria-hidden="true" />
+                                </div>
+                                <div className="ml-4 flex-1">
                                     <p className="font-medium text-foreground">View Cases</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        Browse and manage client cases
+                                    <p className="mt-0.5 text-sm text-muted-foreground">
+                                        Browse and manage cases
                                     </p>
                                 </div>
+                                <ChevronRight
+                                    className="h-5 w-5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                                    aria-hidden="true"
+                                />
                             </CardContent>
                         </Card>
                     </Link>
-                    <Link href="/cases?new=true">
-                        <Card className="cursor-pointer transition-shadow hover:shadow-md">
-                            <CardContent className="flex items-center p-6">
-                                <FileText
-                                    className="h-8 w-8 text-primary-600"
-                                    aria-hidden="true"
-                                />
-                                <div className="ml-4">
+                    <Link href="/cases?new=true" className="group">
+                        <Card className="h-full transition-all duration-200 group-hover:shadow-md group-hover:border-primary-200 dark:group-hover:border-primary-800">
+                            <CardContent className="flex items-center p-5">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-100 text-primary-600 transition-colors group-hover:bg-primary-200 dark:bg-primary-900 dark:text-primary-400 dark:group-hover:bg-primary-800">
+                                    <FileText className="h-6 w-6" aria-hidden="true" />
+                                </div>
+                                <div className="ml-4 flex-1">
                                     <p className="font-medium text-foreground">New Case</p>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="mt-0.5 text-sm text-muted-foreground">
                                         Create a new client case
                                     </p>
                                 </div>
+                                <ChevronRight
+                                    className="h-5 w-5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                                    aria-hidden="true"
+                                />
                             </CardContent>
                         </Card>
                     </Link>
@@ -162,34 +181,48 @@ export default function DashboardPage() {
                 <Card>
                     <div className="divide-y divide-border">
                         {casesLoading ? (
-                            <div className="p-6 text-center text-muted-foreground">
-                                Loading...
-                            </div>
+                            // Skeleton loading state
+                            Array.from({ length: 3 }).map((_, i) => (
+                                <div key={i} className="flex items-center justify-between p-4">
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-40" />
+                                        <Skeleton className="h-3 w-24" />
+                                    </div>
+                                    <Skeleton className="h-5 w-16 rounded-full" />
+                                </div>
+                            ))
                         ) : cases && cases.length > 0 ? (
                             cases.slice(0, 5).map((caseItem) => (
                                 <Link
                                     key={caseItem.id}
                                     href={`/cases/${caseItem.id}`}
-                                    className="block p-4 hover:bg-accent"
+                                    className="flex items-center justify-between p-4 transition-colors duration-150 hover:bg-accent"
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="font-medium text-foreground">
-                                                {caseItem.client?.name || 'Unknown Client'}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {caseItem.case_type} - {caseItem.year}
-                                            </p>
-                                        </div>
-                                        <Badge variant={getStatusBadgeVariant(caseItem.status)}>
-                                            {caseItem.status.replace(/_/g, ' ')}
-                                        </Badge>
+                                    <div>
+                                        <p className="font-medium text-foreground">
+                                            {caseItem.client?.name || 'Unknown Client'}
+                                        </p>
+                                        <p className="mt-0.5 text-sm text-muted-foreground">
+                                            {caseItem.case_type} · {caseItem.year}
+                                        </p>
                                     </div>
+                                    <Badge variant={getStatusBadgeVariant(caseItem.status)}>
+                                        {caseItem.status.replace(/_/g, ' ')}
+                                    </Badge>
                                 </Link>
                             ))
                         ) : (
-                            <div className="p-6 text-center text-muted-foreground">
-                                No cases found. Create your first case to get started.
+                            <div className="py-12 text-center">
+                                <Briefcase
+                                    className="mx-auto h-10 w-10 text-muted-foreground/50"
+                                    aria-hidden="true"
+                                />
+                                <p className="mt-3 text-sm text-muted-foreground">
+                                    No cases found
+                                </p>
+                                <p className="mt-1 text-xs text-muted-foreground/75">
+                                    Create your first case to get started
+                                </p>
                             </div>
                         )}
                     </div>

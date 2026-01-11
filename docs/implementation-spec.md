@@ -13,7 +13,7 @@
 | **M1 (Core)** | ✅ Complete | 2026-01-10 | Full ingestion pipeline, hybrid search, chat with citations |
 | **M2 (TaxDome)** | 🔲 Not Started | — | Windows sync agent pending |
 | **M3 (Artifacts)** | ✅ Complete | 2026-01-10 | Template renderer, 6 Jinja2 templates, artifact storage, IntakeAgent |
-| **M4 (Extraction)** | 🔲 Not Started | — | — |
+| **M4 (Extraction)** | ✅ Complete | 2026-01-11 | ExtractionAgent, NoticeAgent, QCAgent, auto-extraction worker |
 
 ### M1 Completion Details
 - Docker Compose infrastructure (Postgres+pgvector, Redis, MinIO) ✓
@@ -31,6 +31,18 @@
 - MCP servers for template operations and artifact storage ✓
 - Frontend artifact viewer components ✓
 - Artifact storage in PostgreSQL ✓
+
+### M4 Completion Details
+- ExtractionAgent for W-2/1099/K-1 structured data extraction ✓
+- Type-specific system prompts with IRS box mappings ✓
+- Anomaly detection (negative values, tax > wages, missing fields) ✓
+- Confidence scoring (HIGH/MEDIUM/LOW) with needs_review flags ✓
+- NoticeAgent for IRS notice analysis and response drafting ✓
+- Notice type detection (CP2000, CP501, CP504, LT11, etc.) ✓
+- QCAgent for quality control review memos ✓
+- Individual and business return checklists ✓
+- Auto-extraction Celery worker task ✓
+- Orchestrator routing for extraction, notice, qc intents ✓
 
 ### Storage Abstraction Implementation (Bonus)
 - Abstract StorageBackend interface ✓

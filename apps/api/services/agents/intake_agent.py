@@ -9,12 +9,11 @@ from uuid import UUID
 
 import orjson
 import structlog
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from database.models import Artifact
 from services.model_router import ModelRouter
 from services.template_context import prepare_case_context
 from services.template_renderer import get_template_renderer
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 

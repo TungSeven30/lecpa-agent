@@ -11,11 +11,29 @@ import {
     FileSpreadsheet,
     ClipboardCheck,
 } from 'lucide-react';
-import { Button, Card, Badge } from '@/components/ui';
+import { Button, Card, Badge, Skeleton } from '@/components/ui';
 import { useToast } from '@/components/ui/toast';
 import { api, type Artifact } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { ArtifactViewer } from '@/components/artifacts/artifact-viewer';
+
+function ArtifactSkeleton() {
+    return (
+        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-lg" />
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="h-5 w-24 rounded-full" />
+                        <Skeleton className="h-3 w-16" />
+                    </div>
+                </div>
+            </div>
+            <Skeleton className="h-8 w-8 rounded-md" />
+        </div>
+    );
+}
 
 interface ArtifactListProps {
     caseId: string;
@@ -91,22 +109,24 @@ export function ArtifactList({ caseId, onViewArtifact }: ArtifactListProps) {
     return (
         <div>
             <div className="mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Artifacts</h3>
-                <p className="text-sm text-gray-500">
+                <h3 className="text-lg font-medium text-foreground">Artifacts</h3>
+                <p className="text-sm text-muted-foreground">
                     Generated documents and drafts
                 </p>
             </div>
 
             {isLoading ? (
-                <div className="py-8 text-center text-gray-500">
-                    Loading artifacts...
+                <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <ArtifactSkeleton key={i} />
+                    ))}
                 </div>
             ) : artifacts && artifacts.length > 0 ? (
                 <div className="space-y-2">
                     {artifacts.map((artifact) => (
                         <Card
                             key={artifact.id}
-                            className="cursor-pointer transition-colors hover:bg-gray-50"
+                            className="cursor-pointer transition-all duration-200 hover:bg-accent hover:shadow-sm"
                             onClick={() => handleViewArtifact(artifact)}
                             role="button"
                             tabIndex={0}
@@ -119,22 +139,22 @@ export function ArtifactList({ caseId, onViewArtifact }: ArtifactListProps) {
                         >
                             <div className="flex items-center justify-between p-4">
                                 <div className="flex min-w-0 items-center gap-3">
-                                    <div className="flex-shrink-0 rounded-lg bg-gray-100 p-2">
+                                    <div className="flex-shrink-0 rounded-lg bg-muted p-2">
                                         {artifactIcons[artifact.artifact_type] || (
                                             <FileEdit
-                                                className="h-5 w-5 text-gray-600"
+                                                className="h-5 w-5 text-muted-foreground"
                                                 aria-hidden="true"
                                             />
                                         )}
                                     </div>
                                     <div className="min-w-0">
                                         <p
-                                            className="max-w-[250px] truncate font-medium text-gray-900"
+                                            className="max-w-[250px] truncate font-medium text-foreground"
                                             title={artifact.title}
                                         >
                                             {artifact.title}
                                         </p>
-                                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Badge variant="secondary">
                                                 {artifactLabels[artifact.artifact_type] ||
                                                     artifact.artifact_type}
@@ -162,15 +182,17 @@ export function ArtifactList({ caseId, onViewArtifact }: ArtifactListProps) {
                 </div>
             ) : (
                 <Card>
-                    <div className="py-8 text-center">
-                        <FileEdit
-                            className="mx-auto h-10 w-10 text-gray-400"
-                            aria-hidden="true"
-                        />
-                        <p className="mt-2 text-sm text-gray-500">
-                            No artifacts generated yet
-                        </p>
-                        <p className="mt-1 text-xs text-gray-400">
+                    <div className="py-12 text-center">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                            <FileEdit
+                                className="h-8 w-8 text-muted-foreground"
+                                aria-hidden="true"
+                            />
+                        </div>
+                        <h3 className="mt-4 text-lg font-medium text-foreground">
+                            No artifacts yet
+                        </h3>
+                        <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
                             Use the chat to generate emails, checklists, and more
                         </p>
                     </div>

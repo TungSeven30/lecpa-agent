@@ -45,7 +45,7 @@ class Document(BaseModel):
     case_id: UUID
     filename: str
     original_filename: str
-    s3_key: str
+    storage_key: str
     mime_type: str
     file_size: int
     page_count: int | None = None

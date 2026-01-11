@@ -10,10 +10,28 @@ import {
     AlertCircle,
     Eye,
 } from 'lucide-react';
-import { Button, Card, Badge } from '@/components/ui';
+import { Button, Card, Badge, Skeleton } from '@/components/ui';
 import { useToast } from '@/components/ui/toast';
 import { api, type Document } from '@/lib/api';
 import { cn } from '@/lib/utils';
+
+function DocumentSkeleton() {
+    return (
+        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-lg" />
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-32" />
+                </div>
+            </div>
+            <div className="flex items-center gap-3">
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-8 w-8 rounded-md" />
+            </div>
+        </div>
+    );
+}
 
 interface DocumentListProps {
     caseId: string;
@@ -99,7 +117,7 @@ export function DocumentList({ caseId, onViewDocument }: DocumentListProps) {
     return (
         <div>
             <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">Documents</h3>
+                <h3 className="text-lg font-medium text-foreground">Documents</h3>
                 <label className="cursor-pointer">
                     <input
                         type="file"
@@ -159,8 +177,10 @@ export function DocumentList({ caseId, onViewDocument }: DocumentListProps) {
             </div>
 
             {isLoading ? (
-                <div className="py-8 text-center text-gray-500">
-                    Loading documents...
+                <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <DocumentSkeleton key={i} />
+                    ))}
                 </div>
             ) : documents && documents.length > 0 ? (
                 <div className="space-y-2">
@@ -168,9 +188,9 @@ export function DocumentList({ caseId, onViewDocument }: DocumentListProps) {
                         <Card
                             key={doc.id}
                             className={cn(
-                                'cursor-pointer transition-colors hover:bg-gray-50',
+                                'cursor-pointer transition-all duration-200 hover:bg-accent hover:shadow-sm',
                                 doc.processing_status === 'failed' &&
-                                    'border-red-200 bg-red-50'
+                                    'border-error/50 bg-error/10'
                             )}
                             onClick={() => onViewDocument?.(doc)}
                             role="button"
@@ -184,20 +204,20 @@ export function DocumentList({ caseId, onViewDocument }: DocumentListProps) {
                         >
                             <div className="flex items-center justify-between p-4">
                                 <div className="flex min-w-0 items-center gap-3">
-                                    <div className="flex-shrink-0 rounded-lg bg-gray-100 p-2">
+                                    <div className="flex-shrink-0 rounded-lg bg-muted p-2">
                                         <FileText
-                                            className="h-5 w-5 text-gray-600"
+                                            className="h-5 w-5 text-muted-foreground"
                                             aria-hidden="true"
                                         />
                                     </div>
                                     <div className="min-w-0">
                                         <p
-                                            className="max-w-[200px] truncate font-medium text-gray-900"
+                                            className="max-w-[200px] truncate font-medium text-foreground"
                                             title={doc.filename}
                                         >
                                             {doc.filename}
                                         </p>
-                                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <span>{formatFileSize(doc.file_size)}</span>
                                             {doc.page_count && (
                                                 <span>&bull; {doc.page_count} pages</span>
@@ -227,7 +247,7 @@ export function DocumentList({ caseId, onViewDocument }: DocumentListProps) {
                                     <div className="flex items-center gap-1.5">
                                         {statusIcons[doc.processing_status] ||
                                             statusIcons.pending}
-                                        <span className="text-sm text-gray-600">
+                                        <span className="text-sm text-muted-foreground">
                                             {statusLabels[doc.processing_status] ||
                                                 doc.processing_status}
                                         </span>
@@ -247,15 +267,20 @@ export function DocumentList({ caseId, onViewDocument }: DocumentListProps) {
                 </div>
             ) : (
                 <Card>
-                    <div className="py-8 text-center">
-                        <FileText
-                            className="mx-auto h-10 w-10 text-gray-400"
-                            aria-hidden="true"
-                        />
-                        <p className="mt-2 text-sm text-gray-500">
-                            No documents uploaded yet
+                    <div className="py-12 text-center">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                            <FileText
+                                className="h-8 w-8 text-muted-foreground"
+                                aria-hidden="true"
+                            />
+                        </div>
+                        <h3 className="mt-4 text-lg font-medium text-foreground">
+                            No documents yet
+                        </h3>
+                        <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+                            Upload documents to get started with this case
                         </p>
-                        <label className="mt-4 inline-block cursor-pointer">
+                        <label className="mt-6 inline-block cursor-pointer">
                             <input
                                 type="file"
                                 multiple
@@ -265,7 +290,7 @@ export function DocumentList({ caseId, onViewDocument }: DocumentListProps) {
                                 aria-label="Upload documents"
                             />
                             <span
-                                className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-gray-300 bg-white px-4 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-100"
+                                className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:bg-accent"
                                 role="button"
                                 tabIndex={0}
                             >

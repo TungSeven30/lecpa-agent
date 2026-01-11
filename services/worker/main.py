@@ -19,6 +19,7 @@ app = Celery(
         "tasks.canonicalize",
         "tasks.ocr",
         "tasks.embed",
+        "tasks.field_extraction",
     ],
 )
 
@@ -43,6 +44,7 @@ app.conf.task_routes = {
     "tasks.extract.*": {"queue": "extract"},
     "tasks.ocr.*": {"queue": "ocr"},
     "tasks.embed.*": {"queue": "embed"},
+    "tasks.field_extraction.*": {"queue": "field_extraction"},
 }
 
 if __name__ == "__main__":

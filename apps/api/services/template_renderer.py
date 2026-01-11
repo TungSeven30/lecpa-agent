@@ -17,7 +17,8 @@ from jinja2 import (
 )
 
 from shared.config.loader import load_templates_config
-from shared.config.schemas import TemplateMetadata, TemplatesConfig
+from shared.config.schemas import TemplateMetadata
+from shared.utils.redaction import mask_ssn
 
 logger = structlog.get_logger()
 
@@ -64,7 +65,7 @@ class TemplateRenderer:
 
         # Add custom filters for CPA-specific formatting
         self.env.filters["format_currency"] = self._format_currency
-        self.env.filters["mask_ssn"] = self._mask_ssn
+        self.env.filters["mask_ssn"] = mask_ssn  # Use shared utility
 
         logger.info(
             "Template renderer initialized",
@@ -204,28 +205,6 @@ class TemplateRenderer:
             return f"${numeric_value:,.2f}"
         except (ValueError, TypeError):
             return str(value)
-
-    @staticmethod
-    def _mask_ssn(ssn: str) -> str:
-        """Mask SSN showing only last 4 digits.
-
-        Args:
-            ssn: Social Security Number (any format)
-
-        Returns:
-            Masked SSN (e.g., "XXX-XX-1234")
-        """
-        if not ssn:
-            return "XXX-XX-XXXX"
-
-        # Extract only digits
-        digits = "".join(c for c in str(ssn) if c.isdigit())
-
-        if len(digits) < 4:
-            return "XXX-XX-XXXX"
-
-        return f"XXX-XX-{digits[-4:]}"
-
 
 @lru_cache
 def get_template_renderer() -> TemplateRenderer:

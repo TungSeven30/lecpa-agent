@@ -82,20 +82,20 @@ export function ChatContainer({ caseId, onCitationClick }: ChatContainerProps) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center text-center">
-            <div className="rounded-full bg-primary-100 p-4">
-              <MessageSquare className="h-8 w-8 text-primary-600" />
+          <div className="flex h-full flex-col items-center justify-center text-center px-4">
+            <div className="rounded-full bg-primary-100 p-4 dark:bg-primary-900">
+              <MessageSquare className="h-8 w-8 text-primary-600 dark:text-primary-400" aria-hidden="true" />
             </div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
+            <h3 className="mt-4 text-lg font-medium text-foreground">
               Start a conversation
             </h3>
-            <p className="mt-2 max-w-sm text-sm text-gray-500">
+            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
               Ask questions about your clients, documents, or tax matters. I can
               help you find information and draft responses.
             </p>
-            <div className="mt-6 space-y-2 text-sm text-gray-600">
-              <p className="font-medium">Try asking:</p>
-              <ul className="space-y-1 text-gray-500">
+            <div className="mt-6 space-y-2 text-sm">
+              <p className="font-medium text-foreground">Try asking:</p>
+              <ul className="space-y-1 text-muted-foreground">
                 <li>&quot;Summarize the W-2s for client ABC&quot;</li>
                 <li>&quot;What documents are missing for the 2024 return?&quot;</li>
                 <li>&quot;Draft a response to the CP2000 notice&quot;</li>
@@ -103,7 +103,7 @@ export function ChatContainer({ caseId, onCitationClick }: ChatContainerProps) {
             </div>
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y divide-border">
             {messages.map((message, index) => (
               <ChatMessage
                 key={index}

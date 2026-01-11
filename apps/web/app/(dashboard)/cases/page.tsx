@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Briefcase } from 'lucide-react';
-import { Button, Input, Card, Badge } from '@/components/ui';
+import { Plus, Search, Briefcase, ChevronRight } from 'lucide-react';
+import { Button, Input, Card, Badge, Skeleton } from '@/components/ui';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 
@@ -18,6 +18,26 @@ const statusColors: Record<string, BadgeVariant> = {
     completed: 'success',
     closed: 'secondary',
 };
+
+function CaseCardSkeleton() {
+    return (
+        <Card>
+            <div className="flex items-center justify-between p-5">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-12 w-12 rounded-lg" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-3 w-32" />
+                    </div>
+                </div>
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <Skeleton className="h-4 w-24" />
+                </div>
+            </div>
+        </Card>
+    );
+}
 
 export default function CasesPage() {
     const [search, setSearch] = useState('');
@@ -40,11 +60,11 @@ export default function CasesPage() {
     });
 
     return (
-        <div className="p-8">
-            <div className="mb-8 flex items-center justify-between">
+        <div className="p-6 lg:p-8">
+            <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">Cases</h1>
-                    <p className="text-muted-foreground">
+                    <p className="mt-1 text-muted-foreground">
                         Manage client cases and tax returns
                     </p>
                 </div>
@@ -55,7 +75,7 @@ export default function CasesPage() {
             </div>
 
             {/* Filters */}
-            <div className="mb-6 flex gap-4">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:gap-4">
                 <div className="relative flex-1">
                     <Search
                         className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -72,7 +92,7 @@ export default function CasesPage() {
                 <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="min-h-[44px] rounded-md border border-input bg-background px-4 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    className="min-h-[44px] rounded-md border border-input bg-background px-4 py-2 text-sm text-foreground transition-colors focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                     aria-label="Filter by status"
                 >
                     <option value="">All Statuses</option>
@@ -86,17 +106,23 @@ export default function CasesPage() {
 
             {/* Cases List */}
             {isLoading ? (
-                <div className="py-12 text-center text-muted-foreground">
-                    Loading cases...
+                <div className="grid gap-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <CaseCardSkeleton key={i} />
+                    ))}
                 </div>
             ) : filteredCases && filteredCases.length > 0 ? (
-                <div className="grid gap-4">
+                <div className="grid gap-3">
                     {filteredCases.map((caseItem) => (
-                        <Link key={caseItem.id} href={`/cases/${caseItem.id}`}>
-                            <Card className="cursor-pointer transition-shadow hover:shadow-md">
-                                <div className="flex items-center justify-between p-6">
+                        <Link
+                            key={caseItem.id}
+                            href={`/cases/${caseItem.id}`}
+                            className="group"
+                        >
+                            <Card className="transition-all duration-200 group-hover:shadow-md group-hover:border-primary-200 dark:group-hover:border-primary-800">
+                                <div className="flex items-center justify-between p-5">
                                     <div className="flex items-center gap-4">
-                                        <div className="rounded-lg bg-primary-100 p-3 dark:bg-primary-900">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-100 transition-colors group-hover:bg-primary-200 dark:bg-primary-900 dark:group-hover:bg-primary-800">
                                             <Briefcase
                                                 className="h-6 w-6 text-primary-600 dark:text-primary-400"
                                                 aria-hidden="true"
@@ -106,21 +132,25 @@ export default function CasesPage() {
                                             <p className="font-semibold text-foreground">
                                                 {caseItem.client?.name || 'Unknown Client'}
                                             </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {caseItem.client?.client_code} &bull;{' '}
-                                                {caseItem.case_type} &bull; {caseItem.year}
+                                            <p className="mt-0.5 text-sm text-muted-foreground">
+                                                {caseItem.client?.client_code} · {caseItem.case_type} ·{' '}
+                                                {caseItem.year}
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-3">
                                         <Badge
                                             variant={statusColors[caseItem.status] || 'default'}
                                         >
                                             {caseItem.status.replace(/_/g, ' ')}
                                         </Badge>
-                                        <p className="text-sm text-muted-foreground">
+                                        <span className="hidden text-sm text-muted-foreground sm:inline">
                                             {formatDate(caseItem.updated_at)}
-                                        </p>
+                                        </span>
+                                        <ChevronRight
+                                            className="h-5 w-5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                                            aria-hidden="true"
+                                        />
                                     </div>
                                 </div>
                             </Card>
@@ -129,21 +159,23 @@ export default function CasesPage() {
                 </div>
             ) : (
                 <Card>
-                    <div className="py-12 text-center">
-                        <Briefcase
-                            className="mx-auto h-12 w-12 text-muted-foreground"
-                            aria-hidden="true"
-                        />
+                    <div className="py-16 text-center">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                            <Briefcase
+                                className="h-8 w-8 text-muted-foreground"
+                                aria-hidden="true"
+                            />
+                        </div>
                         <h3 className="mt-4 text-lg font-medium text-foreground">
                             No cases found
                         </h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
+                        <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
                             {search
                                 ? 'Try adjusting your search or filters'
                                 : 'Get started by creating your first case'}
                         </p>
                         {!search && (
-                            <Button className="mt-4">
+                            <Button className="mt-6">
                                 <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
                                 New Case
                             </Button>

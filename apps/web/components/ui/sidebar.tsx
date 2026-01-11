@@ -67,7 +67,7 @@ export function Sidebar() {
             <div className="border-t border-sidebar-border p-4 space-y-2">
                 <div className="flex items-center justify-between px-3">
                     <span className="text-sm text-sidebar-muted">Theme</span>
-                    <ThemeToggle />
+                    <ThemeToggle className="text-sidebar-foreground hover:bg-sidebar-accent" />
                 </div>
                 <button
                     onClick={() => signOut()}

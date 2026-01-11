@@ -12,8 +12,14 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
 # Add packages to path for storage backend imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "apps" / "api"))
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "packages"))
+# IMPORTANT: Use append() not insert(0) to avoid overriding the worker's main.py
+# with the API's main.py when resolving 'from main import app' in other task modules
+_api_path = str(Path(__file__).parent.parent.parent.parent / "apps" / "api")
+_packages_path = str(Path(__file__).parent.parent.parent.parent / "packages")
+if _api_path not in sys.path:
+    sys.path.append(_api_path)
+if _packages_path not in sys.path:
+    sys.path.append(_packages_path)
 
 from services.storage import StorageBackend, get_storage
 from shared.config import load_embeddings_config
@@ -244,6 +250,12 @@ def ingest_document(self, document_id: str) -> dict:
                 page_count=page_count,
                 chunk_count=len(chunks),
                 is_ocr=is_ocr,
+            )
+
+            # Trigger auto-extraction if enabled and document is eligible
+            app.send_task(
+                "tasks.field_extraction.auto_extract_if_eligible",
+                args=[document_id],
             )
 
             return {

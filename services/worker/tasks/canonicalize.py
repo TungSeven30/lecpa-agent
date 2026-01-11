@@ -5,132 +5,34 @@ Normalizes messy PDFs before chunking:
 - Collapse excessive whitespace
 - Preserve page boundaries as markers
 - Normalize common OCR artifacts
-"""
 
-import re
-from collections import Counter
-from dataclasses import dataclass
+The pure utility functions are in canonicalize_utils.py for easy testing.
+"""
 
 import structlog
 
 from main import app
 
+# Import pure functions from utils module (no Celery dependency)
+from tasks.canonicalize_utils import (
+    CanonicalizedDocument,
+    collapse_whitespace,
+    find_repeated_lines,
+    normalize_ocr_artifacts,
+    remove_headers_footers,
+)
+
 logger = structlog.get_logger()
 
-
-@dataclass
-class CanonicalizedDocument:
-    """Result from document canonicalization."""
-
-    text: str
-    page_texts: list[str]
-    removed_headers: list[str]
-    removed_footers: list[str]
-
-
-def find_repeated_lines(page_texts: list[str], threshold: float = 0.7) -> tuple[set[str], set[str]]:
-    """Find lines that repeat across pages (likely headers/footers).
-
-    Args:
-        page_texts: List of text per page
-        threshold: Fraction of pages a line must appear on to be considered repeated
-
-    Returns:
-        Tuple of (header candidates, footer candidates)
-    """
-    if len(page_texts) < 3:
-        return set(), set()
-
-    min_occurrences = int(len(page_texts) * threshold)
-
-    # Get first and last few lines of each page
-    first_lines: list[str] = []
-    last_lines: list[str] = []
-
-    for page_text in page_texts:
-        lines = [l.strip() for l in page_text.split("\n") if l.strip()]
-        if lines:
-            # First 3 lines as potential headers
-            first_lines.extend(lines[:3])
-            # Last 3 lines as potential footers
-            last_lines.extend(lines[-3:])
-
-    # Count occurrences
-    first_counts = Counter(first_lines)
-    last_counts = Counter(last_lines)
-
-    # Filter by threshold
-    headers = {line for line, count in first_counts.items() if count >= min_occurrences and len(line) > 5}
-    footers = {line for line, count in last_counts.items() if count >= min_occurrences and len(line) > 5}
-
-    return headers, footers
-
-
-def remove_headers_footers(text: str, headers: set[str], footers: set[str]) -> str:
-    """Remove identified headers and footers from text.
-
-    Args:
-        text: Page text
-        headers: Set of header lines to remove
-        footers: Set of footer lines to remove
-
-    Returns:
-        Cleaned text
-    """
-    lines = text.split("\n")
-    cleaned_lines = []
-
-    for line in lines:
-        stripped = line.strip()
-        if stripped and stripped not in headers and stripped not in footers:
-            cleaned_lines.append(line)
-
-    return "\n".join(cleaned_lines)
-
-
-def collapse_whitespace(text: str) -> str:
-    """Collapse excessive whitespace while preserving structure.
-
-    Args:
-        text: Input text
-
-    Returns:
-        Text with normalized whitespace
-    """
-    # Replace multiple spaces with single space
-    text = re.sub(r"[ \t]+", " ", text)
-
-    # Replace 3+ consecutive newlines with 2
-    text = re.sub(r"\n{3,}", "\n\n", text)
-
-    # Remove trailing whitespace from lines
-    lines = [line.rstrip() for line in text.split("\n")]
-
-    return "\n".join(lines)
-
-
-def normalize_ocr_artifacts(text: str) -> str:
-    """Normalize common OCR artifacts.
-
-    Args:
-        text: Input text
-
-    Returns:
-        Text with normalized artifacts
-    """
-    # Common OCR substitutions
-    replacements = [
-        (r"\bl\b(?=\d)", "1"),  # Lowercase L before numbers -> 1
-        (r"(?<=\d)O(?=\d)", "0"),  # Capital O between numbers -> 0
-        (r"(?<=\d)l(?=\d)", "1"),  # Lowercase L between numbers -> 1
-        (r"\bll\b", "11"),  # Double L -> 11
-        (r"(?<=[A-Z])0(?=[A-Z])", "O"),  # Zero between caps -> O
-    ]
-
-    for pattern, replacement in replacements:
-        text = re.sub(pattern, replacement, text)
-
-    return text
+# Re-export for backwards compatibility
+__all__ = [
+    "CanonicalizedDocument",
+    "collapse_whitespace",
+    "find_repeated_lines",
+    "normalize_ocr_artifacts",
+    "remove_headers_footers",
+    "canonicalize_document",
+]
 
 
 @app.task(bind=True, name="tasks.canonicalize.canonicalize_document")
