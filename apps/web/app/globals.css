@@ -7,36 +7,36 @@
     /* Border radius */
     --radius: 0.5rem;
 
-    /* Core semantic colors - Light mode */
-    --background: 255 255 255;
-    --foreground: 17 24 39;
+    /* Core semantic colors - Light mode (Warm Beige/Cream) */
+    --background: 250 247 240;           /* #FAF7F0 - warm off-white */
+    --foreground: 41 37 36;              /* #292524 - warm dark brown (stone-800) */
 
-    /* Card surfaces */
-    --card: 255 255 255;
-    --card-foreground: 17 24 39;
+    /* Card surfaces - slightly warmer than background */
+    --card: 255 253 250;                 /* #FFFDFA - soft warm white */
+    --card-foreground: 41 37 36;         /* #292524 - warm dark brown */
 
-    /* Muted/secondary content */
-    --muted: 243 244 246;
-    --muted-foreground: 107 114 128;
+    /* Muted/secondary content - cream tan */
+    --muted: 245 241 234;                /* #F5F1EA - light tan */
+    --muted-foreground: 120 113 108;     /* #78716C - warm gray (stone-500) */
 
-    /* Accent/hover states */
-    --accent: 243 244 246;
-    --accent-foreground: 17 24 39;
+    /* Accent/hover states - darker cream */
+    --accent: 236 230 220;               /* #ECE6DC - medium cream */
+    --accent-foreground: 41 37 36;       /* #292524 - warm dark */
 
-    /* Borders and inputs */
-    --border: 229 231 235;
-    --input: 229 231 235;
+    /* Borders and inputs - warm gray */
+    --border: 214 211 209;               /* #D6D3D1 - stone-300 */
+    --input: 214 211 209;                /* #D6D3D1 - stone-300 */
     --ring: 59 130 246;
-    --ring-offset: 255 255 255;
+    --ring-offset: 250 247 240;          /* Match background */
 
     /* Sidebar - dark sidebar on light background */
-    --sidebar: 17 24 39;
-    --sidebar-foreground: 255 255 255;
-    --sidebar-muted: 156 163 175;
-    --sidebar-accent: 31 41 55;
-    --sidebar-border: 31 41 55;
+    --sidebar: 41 37 36;                 /* #292524 - stone-800 */
+    --sidebar-foreground: 250 250 249;   /* #FAFAF9 - stone-50 */
+    --sidebar-muted: 168 162 158;        /* #A8A29E - stone-400 */
+    --sidebar-accent: 68 64 60;          /* #44403C - stone-700 */
+    --sidebar-border: 68 64 60;          /* #44403C - stone-700 */
 
-    /* Status colors */
+    /* Status colors - warm tinted */
     --success: 220 252 231;
     --success-foreground: 22 101 52;
     --warning: 254 249 195;
@@ -45,47 +45,6 @@
     --error-foreground: 153 27 27;
     --info: 219 234 254;
     --info-foreground: 30 64 175;
-  }
-
-  .dark {
-    /* Core semantic colors - Dark mode */
-    --background: 17 24 39;
-    --foreground: 243 244 246;
-
-    /* Card surfaces */
-    --card: 31 41 55;
-    --card-foreground: 243 244 246;
-
-    /* Muted/secondary content */
-    --muted: 55 65 81;
-    --muted-foreground: 156 163 175;
-
-    /* Accent/hover states */
-    --accent: 55 65 81;
-    --accent-foreground: 243 244 246;
-
-    /* Borders and inputs */
-    --border: 55 65 81;
-    --input: 55 65 81;
-    --ring: 59 130 246;
-    --ring-offset: 17 24 39;
-
-    /* Sidebar - slightly lighter than background in dark mode */
-    --sidebar: 31 41 55;
-    --sidebar-foreground: 243 244 246;
-    --sidebar-muted: 156 163 175;
-    --sidebar-accent: 55 65 81;
-    --sidebar-border: 55 65 81;
-
-    /* Status colors - darker backgrounds for dark mode */
-    --success: 20 83 45;
-    --success-foreground: 187 247 208;
-    --warning: 113 63 18;
-    --warning-foreground: 254 240 138;
-    --error: 127 29 29;
-    --error-foreground: 254 202 202;
-    --info: 30 58 138;
-    --info-foreground: 191 219 254;
   }
 
   * {
@@ -100,6 +59,48 @@
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
+}
+
+/* DARK MODE - Outside @layer base for proper CSS cascade/specificity */
+html.dark {
+  /* Core semantic colors - Dark mode (Warm Stone) */
+  --background: 28 25 23;              /* #1C1917 - stone-900 */
+  --foreground: 245 245 244;           /* #F5F5F4 - stone-100 */
+
+  /* Card surfaces - slightly elevated */
+  --card: 41 37 36;                    /* #292524 - stone-800 */
+  --card-foreground: 245 245 244;      /* #F5F5F4 - stone-100 */
+
+  /* Muted/secondary content */
+  --muted: 68 64 60;                   /* #44403C - stone-700 */
+  --muted-foreground: 168 162 158;     /* #A8A29E - stone-400 */
+
+  /* Accent/hover states */
+  --accent: 68 64 60;                  /* #44403C - stone-700 */
+  --accent-foreground: 245 245 244;    /* #F5F5F4 - stone-100 */
+
+  /* Borders and inputs */
+  --border: 68 64 60;                  /* #44403C - stone-700 */
+  --input: 68 64 60;                   /* #44403C - stone-700 */
+  --ring: 59 130 246;
+  --ring-offset: 28 25 23;             /* Match background */
+
+  /* Sidebar - slightly darker than content */
+  --sidebar: 23 23 23;                 /* Darker than content */
+  --sidebar-foreground: 245 245 244;   /* #F5F5F4 - stone-100 */
+  --sidebar-muted: 168 162 158;        /* #A8A29E - stone-400 */
+  --sidebar-accent: 41 37 36;          /* #292524 - stone-800 */
+  --sidebar-border: 41 37 36;          /* #292524 - stone-800 */
+
+  /* Status colors - darker backgrounds for dark mode */
+  --success: 20 83 45;
+  --success-foreground: 187 247 208;
+  --warning: 113 63 18;
+  --warning-foreground: 254 240 138;
+  --error: 127 29 29;
+  --error-foreground: 254 202 202;
+  --info: 30 58 138;
+  --info-foreground: 191 219 254;
 }
 
 @layer utilities {
