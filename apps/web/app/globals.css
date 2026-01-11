@@ -3,12 +3,29 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Design tokens for shadcn/ui compatibility */
+    --background: 255 255 255;
+    --foreground: 17 24 39;
+    --muted: 243 244 246;
+    --muted-foreground: 107 114 128;
+    --border: 229 231 235;
+    --input: 209 213 219;
+    --ring: 59 130 246;
+    --ring-offset: 255 255 255;
+  }
+
   * {
     @apply border-gray-200;
   }
 
   body {
     @apply bg-white text-gray-900;
+  }
+
+  /* Focus visible styles for keyboard navigation */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
   }
 }
 

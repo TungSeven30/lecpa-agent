@@ -8,7 +8,7 @@ import { Button, Input, Card, Badge } from '@/components/ui';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 
-const statusColors: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
+const statusColors: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'error'> = {
   open: 'default',
   in_progress: 'default',
   pending_review: 'warning',
