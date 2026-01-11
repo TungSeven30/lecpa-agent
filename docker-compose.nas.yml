@@ -1,0 +1,192 @@
+version: '3.8'
+
+# =============================================================================
+# Krystal Le Agent - Synology NAS Deployment
+# =============================================================================
+# This compose file deploys the entire application stack on Synology NAS
+# using Container Station. All services run as containers with direct
+# filesystem access to /volume1/LeCPA/ClientFiles via bind mount.
+#
+# Prerequisites:
+# - Container Station installed on NAS
+# - Client files at /volume1/LeCPA/ClientFiles/
+# - Docker volumes created at /volume1/docker/lecpa-agent/
+#
+# Deploy with:
+#   docker-compose -f docker-compose.nas.yml up -d --build
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL with pgvector extension
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: lecpa-postgres
+    environment:
+      POSTGRES_DB: lecpa_agent
+      POSTGRES_USER: lecpa
+      POSTGRES_PASSWORD: lecpa_secure_pass
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    volumes:
+      - /volume1/docker/lecpa-agent/postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lecpa -d lecpa_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lecpa-network
+
+  # ---------------------------------------------------------------------------
+  # Redis for Celery task queue
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: lecpa-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - /volume1/docker/lecpa-agent/redis-data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - lecpa-network
+
+  # ---------------------------------------------------------------------------
+  # FastAPI Backend
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: lecpa-api
+    env_file:
+      - .env
+    environment:
+      # Override for container networking
+      - STORAGE_BACKEND=filesystem
+      - NAS_MOUNT_PATH=/client-files
+      - DATABASE_URL=postgresql://lecpa:lecpa_secure_pass@postgres:5432/lecpa_agent
+      - DATABASE_URL_ASYNC=postgresql+asyncpg://lecpa:lecpa_secure_pass@postgres:5432/lecpa_agent
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - LECPA_CONFIG_DIR=/app/config
+    volumes:
+      # Client files with read-write access
+      - /volume1/LeCPA/ClientFiles:/client-files:rw
+      # Configuration files (read-only)
+      - /volume1/docker/lecpa-agent/config:/app/config:ro
+      # Application logs
+      - /volume1/docker/lecpa-agent/logs:/app/logs:rw
+    ports:
+      - "8008:8008"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - lecpa-network
+
+  # ---------------------------------------------------------------------------
+  # Celery Worker for async processing
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile
+    container_name: lecpa-worker
+    env_file:
+      - .env
+    environment:
+      # Override for container networking
+      - STORAGE_BACKEND=filesystem
+      - NAS_MOUNT_PATH=/client-files
+      - DATABASE_URL=postgresql://lecpa:lecpa_secure_pass@postgres:5432/lecpa_agent
+      - DATABASE_URL_ASYNC=postgresql+asyncpg://lecpa:lecpa_secure_pass@postgres:5432/lecpa_agent
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - LECPA_CONFIG_DIR=/app/config
+    volumes:
+      # Client files (read-only for worker safety)
+      - /volume1/LeCPA/ClientFiles:/client-files:ro
+      # Configuration files (read-only)
+      - /volume1/docker/lecpa-agent/config:/app/config:ro
+      # Application logs
+      - /volume1/docker/lecpa-agent/logs:/app/logs:rw
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - lecpa-network
+
+  # ---------------------------------------------------------------------------
+  # Next.js Frontend
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: lecpa-web
+    environment:
+      - NEXT_PUBLIC_API_URL=http://192.168.0.6:8008
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - lecpa-network
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  lecpa-network:
+    driver: bridge
+    name: lecpa-network
+
+# =============================================================================
+# Notes
+# =============================================================================
+# Volume Paths on NAS:
+#   - /volume1/LeCPA/ClientFiles/         - Client documents (existing)
+#   - /volume1/docker/lecpa-agent/postgres-data/  - Database data
+#   - /volume1/docker/lecpa-agent/redis-data/     - Redis persistence
+#   - /volume1/docker/lecpa-agent/config/         - Config files
+#   - /volume1/docker/lecpa-agent/logs/           - Application logs
+#
+# After first deployment:
+#   1. Run migrations: docker exec lecpa-api alembic upgrade head
+#   2. Check logs: docker logs lecpa-api -f
+#   3. Test health: curl http://192.168.0.6:8008/health
+#
+# To update:
+#   docker-compose -f docker-compose.nas.yml pull
+#   docker-compose -f docker-compose.nas.yml up -d --build
+#
+# To backup database:
+#   docker exec lecpa-postgres pg_dump -U lecpa lecpa_agent | gzip > backup.sql.gz
+# =============================================================================

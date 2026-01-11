@@ -11,6 +11,7 @@ from shared.config.schemas import (
     FolderRulesConfig,
     ModelRouterConfig,
     OCRConfig,
+    TemplatesConfig,
 )
 
 
@@ -83,9 +84,33 @@ def load_folder_rules_config() -> FolderRulesConfig:
     return FolderRulesConfig(**data)
 
 
+@lru_cache
+def load_templates_config() -> TemplatesConfig:
+    """Load templates configuration from metadata.yaml.
+
+    Returns:
+        TemplatesConfig with all template definitions
+
+    Raises:
+        FileNotFoundError: If metadata.yaml not found
+        ValidationError: If schema validation fails
+    """
+    config_dir = _get_config_dir()
+    metadata_path = config_dir / "templates" / "metadata.yaml"
+
+    if not metadata_path.exists():
+        raise FileNotFoundError(f"Templates metadata not found: {metadata_path}")
+
+    with open(metadata_path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    return TemplatesConfig(**data)
+
+
 def reload_configs() -> None:
     """Clear cached configs to force reload."""
     load_model_router_config.cache_clear()
     load_embeddings_config.cache_clear()
     load_ocr_config.cache_clear()
     load_folder_rules_config.cache_clear()
+    load_templates_config.cache_clear()

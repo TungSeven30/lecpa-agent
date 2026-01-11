@@ -1,0 +1,59 @@
+{# Template: Document Extraction Summary #}
+{# Variables: document_name, extraction_date, fields, confidence_scores (optional), exceptions (optional) #}
+
+# Document Extraction Summary
+
+**Document:** {{ document_name }}
+**Extracted:** {{ extraction_date }}
+
+---
+
+## Extracted Fields
+
+{% for field in fields %}
+### {{ field.name }}
+
+**Value:** `{{ field.value }}`
+
+{% if confidence_scores and field.name in confidence_scores %}
+**Confidence:** {{ confidence_scores[field.name] }}%
+{% endif %}
+
+{% if field.notes %}
+**Notes:** {{ field.notes }}
+{% endif %}
+
+{% endfor %}
+
+{% if exceptions and exceptions|length > 0 %}
+---
+
+## Exceptions & Warnings
+
+{% for exception in exceptions %}
+- **{{ exception.field }}:** {{ exception.issue }}
+  {% if exception.suggestion %}
+  - *Suggested Action:* {{ exception.suggestion }}
+  {% endif %}
+{% endfor %}
+
+{% endif %}
+
+---
+
+## Summary
+
+- **Total Fields Extracted:** {{ fields|length }}
+{% if exceptions %}
+- **Exceptions Found:** {{ exceptions|length }}
+{% else %}
+- **Exceptions Found:** 0
+{% endif %}
+{% if confidence_scores %}
+- **Average Confidence:** {{ (confidence_scores.values()|list|sum / confidence_scores|length)|round(1) }}%
+{% endif %}
+
+---
+
+*Automated extraction by Krystal Le Agent*
+*Please review all extracted values for accuracy*

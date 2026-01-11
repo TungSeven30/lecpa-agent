@@ -8,6 +8,15 @@ Krystal Le Agent is an internal AI assistant for a CPA firm, designed to acceler
 
 See `docs/implementation-spec.md` for the full implementation specification.
 
+## Current Status
+
+| Milestone | Status | Description |
+|-----------|--------|-------------|
+| **M1 (Core)** | ✅ Complete | Docker infra, document ingestion, hybrid search, chat with citations |
+| **M2 (TaxDome)** | 🔲 Not Started | Windows sync agent, folder mapping |
+| **M3 (Artifacts)** | ✅ Complete | Template renderer, 6 Jinja2 templates, artifact storage, IntakeAgent |
+| **M4 (Extraction)** | 🔲 Not Started | W-2/1099 extraction, IRS notice response |
+
 ## Architecture
 
 ```
@@ -26,10 +35,16 @@ config/
   embeddings.yaml         # Embedding model settings (BGE models)
   ocr.yaml                # OCR fallback settings
   folder_rules.yaml       # TaxDome folder parsing rules
-  templates/              # Jinja2 templates for artifacts
+  templates/*.jinja2      # Jinja2 templates for artifacts
+
+Storage Abstraction:
+  apps/api/services/storage/
+    base.py               # StorageBackend interface
+    filesystem.py         # Filesystem backend (NAS)
+    __init__.py           # Storage factory
 ```
 
-**Data Stores:** Postgres (cases, docs, audit), pgvector (embeddings), S3/MinIO (files), Redis (queue)
+**Data Stores:** Postgres (cases, docs, audit), pgvector (embeddings), S3/MinIO or Filesystem/NAS (files), Redis (queue)
 
 **Package Management:** Python uses `uv` workspace, Next.js uses `pnpm`
 
@@ -69,6 +84,10 @@ mypy apps/api services/worker packages/    # Type check
 # Database migrations
 cd apps/api && alembic upgrade head        # Apply migrations
 cd apps/api && alembic revision --autogenerate -m "description"  # Create migration
+
+# Docker deployment (production)
+docker-compose -f docker-compose.nas.yml up -d --build  # NAS deployment
+docker-compose -f infra/docker-compose.yml up -d         # Local development
 ```
 
 ## Key Patterns
@@ -108,6 +127,22 @@ Agents use MCP tools via:
 - **mcp_kb_server**: `search_docs`, `get_doc`, `list_templates`, `render_template`
 - **mcp_case_server**: `create_case`, `attach_document`, `get_case_summary`, `write_artifact`
 
+### Storage Backend
+Configurable storage abstraction supporting multiple backends:
+- **Filesystem (NAS)**: Direct mount to `/volume1/LeCPA/ClientFiles/` or local path
+- **S3/MinIO**: Object storage for cloud deployments
+- Switch backends via `STORAGE_BACKEND` environment variable
+- Abstract interface in `apps/api/services/storage/base.py`
+- Database uses `storage_key` (provider-agnostic) instead of `s3_key`
+
+### Artifact System
+Template rendering via `TemplateRenderer` service:
+- 6 Jinja2 templates in `config/templates/`
+- Custom filters: `format_currency`, `mask_ssn`, `format_date`, `format_list`
+- Template metadata registry in `config/templates/metadata.yaml`
+- Context preparation from database entities
+- IntakeAgent for LLM-powered document analysis
+
 ## Testing
 
 Test fixtures in `tests/conftest.py` provide:
@@ -127,6 +162,9 @@ S3_ENDPOINT=             # MinIO/S3 endpoint
 S3_ACCESS_KEY=
 S3_SECRET_KEY=
 S3_BUCKET=               # Default: lecpa-documents
+STORAGE_BACKEND=         # Storage type: filesystem or s3 (default: filesystem)
+NAS_MOUNT_PATH=          # NAS mount path (for filesystem backend)
+DEPLOYMENT_TYPE=         # Deployment: nas, cloud, or local
 ```
 
 ## Domain-Specific Context

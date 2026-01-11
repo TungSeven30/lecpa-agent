@@ -1,20 +1,26 @@
 """Main document ingestion orchestration task."""
 
 import os
+import sys
 import tempfile
 import uuid
+from pathlib import Path
 from typing import Any
 
-import boto3
 import structlog
-from botocore.config import Config
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
+
+# Add packages to path for storage backend imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "apps" / "api"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "packages"))
+
+from services.storage import StorageBackend, get_storage
+from shared.config import load_embeddings_config
 
 from main import app
 from tasks.extract import get_extractor
 from tasks.ocr import check_ocr_needed
-from shared.config import load_embeddings_config
 
 logger = structlog.get_logger()
 
@@ -28,16 +34,13 @@ def get_db_session() -> Session:
     return Session(engine)
 
 
-def get_s3_client():
-    """Get an S3 client."""
-    return boto3.client(
-        "s3",
-        endpoint_url=os.environ.get("S3_ENDPOINT", "http://localhost:9000"),
-        aws_access_key_id=os.environ.get("S3_ACCESS_KEY", "minioadmin"),
-        aws_secret_access_key=os.environ.get("S3_SECRET_KEY", "minioadmin"),
-        region_name=os.environ.get("S3_REGION", "us-east-1"),
-        config=Config(signature_version="s3v4"),
-    )
+def get_storage_backend() -> StorageBackend:
+    """Get the configured storage backend.
+
+    Returns:
+        Configured storage backend instance (filesystem, S3, etc.)
+    """
+    return get_storage()
 
 
 def update_document_status(
@@ -123,7 +126,7 @@ def ingest_document(self, document_id: str) -> dict:
     """Main ingestion pipeline for a document.
 
     Pipeline:
-    1. Download from S3 → pending
+    1. Download from storage → pending
     2. Extract text → extracting
     3. OCR if needed → ocr
     4. Canonicalize → canonicalizing
@@ -141,8 +144,7 @@ def ingest_document(self, document_id: str) -> dict:
     logger.info("Starting document ingestion", document_id=document_id)
 
     db = get_db_session()
-    s3 = get_s3_client()
-    bucket = os.environ.get("S3_BUCKET", "lecpa-documents")
+    storage = get_storage_backend()
 
     try:
         # Get document record
@@ -155,15 +157,19 @@ def ingest_document(self, document_id: str) -> dict:
         if not doc:
             raise ValueError(f"Document {document_id} not found")
 
-        s3_key = doc["s3_key"]
+        storage_key = doc["storage_key"]
         mime_type = doc["mime_type"]
         file_size = doc["file_size"]
 
-        # 1. Download from S3
+        # 1. Download from storage backend
         update_document_status(db, document_id, "extracting")
 
+        # Create temp file and write content from storage
+        import asyncio
+        file_content = asyncio.run(storage.download(storage_key))
+
         with tempfile.NamedTemporaryFile(delete=False, suffix=".tmp") as tmp_file:
-            s3.download_file(bucket, s3_key, tmp_file.name)
+            tmp_file.write(file_content)
             tmp_path = tmp_file.name
 
         try:

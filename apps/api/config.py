@@ -3,17 +3,29 @@
 import os
 from functools import lru_cache
 
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment."""
 
+    model_config = ConfigDict(extra="ignore")
+
     # Application
     app_name: str = "Krystal Le Agent API"
     environment: str = "development"
     debug: bool = True
     secret_key: str = "change-me-in-production"
+
+    # Deployment
+    deployment_type: str = "local"  # Options: 'nas', 'cloud', 'local'
+
+    # Storage Backend
+    storage_backend: str = "filesystem"  # Options: 'filesystem', 's3'
+    nas_mount_path: str = "/client-files"  # Container mount path for NAS
+    nas_host: str = "192.168.0.6"  # NAS IP address
+    nas_share: str = "LeCPA"  # NAS share name
 
     # API
     api_host: str = "0.0.0.0"
@@ -47,10 +59,6 @@ class Settings(BaseSettings):
     # Celery
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_result_backend: str = "redis://localhost:6379/0"
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
 
 
 @lru_cache

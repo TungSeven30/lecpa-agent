@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FileEdit, Mail, CheckSquare, FileWarning, Copy } from 'lucide-react';
+import { FileEdit, Mail, CheckSquare, FileWarning, Copy, FileSpreadsheet, ClipboardCheck } from 'lucide-react';
 import { Button, Card, Badge } from '@/components/ui';
 import { api, type Artifact } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
+import { ArtifactViewer } from '@/components/artifacts/artifact-viewer';
 
 interface ArtifactListProps {
   caseId: string;
@@ -12,20 +14,28 @@ interface ArtifactListProps {
 }
 
 const artifactIcons: Record<string, React.ReactNode> = {
-  email_draft: <Mail className="h-5 w-5 text-blue-600" />,
-  checklist: <CheckSquare className="h-5 w-5 text-green-600" />,
-  memo: <FileEdit className="h-5 w-5 text-purple-600" />,
+  missing_docs_email: <Mail className="h-5 w-5 text-blue-600" />,
+  organizer_checklist: <CheckSquare className="h-5 w-5 text-green-600" />,
   notice_response: <FileWarning className="h-5 w-5 text-orange-600" />,
+  qc_memo: <ClipboardCheck className="h-5 w-5 text-purple-600" />,
+  extraction_result: <FileSpreadsheet className="h-5 w-5 text-indigo-600" />,
+  summary: <FileEdit className="h-5 w-5 text-gray-600" />,
+  custom: <FileEdit className="h-5 w-5 text-gray-600" />,
 };
 
 const artifactLabels: Record<string, string> = {
-  email_draft: 'Email Draft',
-  checklist: 'Checklist',
-  memo: 'Memo',
+  missing_docs_email: 'Missing Docs Email',
+  organizer_checklist: 'Organizer Checklist',
   notice_response: 'Notice Response',
+  qc_memo: 'QC Memo',
+  extraction_result: 'Extraction Result',
+  summary: 'Summary',
+  custom: 'Custom',
 };
 
 export function ArtifactList({ caseId, onViewArtifact }: ArtifactListProps) {
+  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
+
   const { data: artifacts, isLoading } = useQuery({
     queryKey: ['artifacts', caseId],
     queryFn: () => api.getCaseArtifacts(caseId),
@@ -37,6 +47,11 @@ export function ArtifactList({ caseId, onViewArtifact }: ArtifactListProps) {
     } catch (error) {
       console.error('Failed to copy:', error);
     }
+  };
+
+  const handleViewArtifact = (artifact: Artifact) => {
+    setSelectedArtifact(artifact);
+    onViewArtifact?.(artifact);
   };
 
   return (
@@ -56,7 +71,7 @@ export function ArtifactList({ caseId, onViewArtifact }: ArtifactListProps) {
             <Card
               key={artifact.id}
               className="cursor-pointer transition-colors hover:bg-gray-50"
-              onClick={() => onViewArtifact?.(artifact)}
+              onClick={() => handleViewArtifact(artifact)}
             >
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
@@ -105,6 +120,12 @@ export function ArtifactList({ caseId, onViewArtifact }: ArtifactListProps) {
           </div>
         </Card>
       )}
+
+      {/* Artifact Viewer Modal */}
+      <ArtifactViewer
+        artifact={selectedArtifact}
+        onClose={() => setSelectedArtifact(null)}
+      />
     </div>
   );
 }

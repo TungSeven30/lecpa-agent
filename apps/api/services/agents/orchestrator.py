@@ -7,6 +7,7 @@ from uuid import UUID
 
 import orjson
 import structlog
+from services.agents.intake_agent import IntakeAgent
 from services.model_router import ModelRouter, get_model_router
 from services.search import HybridSearchService, get_search_service
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,6 +66,7 @@ When answering questions, cite your sources using [Doc: filename, Page: X] forma
         """
         self.model_router = model_router
         self.search_service = search_service
+        self.intake_agent = IntakeAgent(model_router)
 
     async def classify_intent(self, message: str) -> str:
         """Classify the user's intent.
@@ -124,6 +126,57 @@ Respond with ONLY the category name, nothing else."""
         intent = await self.classify_intent(last_message)
 
         logger.info("Classified intent", intent=intent, case_id=case_id)
+
+        # Route to intake subagent if needed
+        if intent == "intake":
+            if not case_id:
+                return ChatResult(
+                    response="Please select a case to generate intake artifacts.",
+                    citations=[],
+                    intent=intent,
+                )
+
+            # Determine which artifact to generate
+            message_lower = last_message.lower()
+
+            if "email" in message_lower:
+                result = await self.intake_agent.generate_missing_docs_email(
+                    case_id=case_id,
+                    db=db,
+                )
+                response = (
+                    f"I've generated a missing documents email:\n\n"
+                    f"{result['preview']}\n\n"
+                    f"**Artifact ID:** {result['artifact_id']}\n\n"
+                    f"*The full email has been saved as a draft artifact.*"
+                )
+
+            elif "checklist" in message_lower or "organizer" in message_lower:
+                result = await self.intake_agent.generate_organizer_checklist(
+                    case_id=case_id,
+                    db=db,
+                )
+                response = (
+                    f"I've generated a tax organizer checklist:\n\n"
+                    f"{result['preview']}\n\n"
+                    f"**Artifact ID:** {result['artifact_id']}\n\n"
+                    f"*The full checklist has been saved as a draft artifact.*"
+                )
+
+            else:
+                # Ask which artifact type
+                response = (
+                    "I can help generate intake artifacts:\n\n"
+                    "- **Missing documents email**: Request missing items from client\n"
+                    "- **Tax organizer checklist**: Comprehensive document collection guide\n\n"
+                    "Which would you like me to generate?"
+                )
+
+            return ChatResult(
+                response=response,
+                citations=[],
+                intent=intent,
+            )
 
         # Search for relevant context
         citations: list[Citation] = []

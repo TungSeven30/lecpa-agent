@@ -1,0 +1,88 @@
+# Template Metadata Registry
+# Central registry for template discovery, validation, and rendering
+# Each template defines required/optional variables and output format
+
+templates:
+  - id: missing_docs_email
+    type: missing_docs_email
+    name: "Missing Documents Email"
+    description: "Email draft requesting missing documents from client"
+    filename: missing_docs_email.jinja2
+    variables:
+      required:
+        - client_name
+        - tax_year
+        - missing_items
+        - preparer_name
+        - firm_name
+      optional:
+        - deadline
+    output_format: markdown
+    category: communication
+
+  - id: organizer_checklist
+    type: organizer_checklist
+    name: "Tax Organizer Checklist"
+    description: "Comprehensive checklist for document collection"
+    filename: organizer_checklist.jinja2
+    variables:
+      required:
+        - client_name
+        - tax_year
+        - return_type
+      optional:
+        - items
+        - firm_name
+    output_format: markdown
+    category: intake
+
+  - id: notice_response
+    type: notice_response
+    name: "IRS Notice Response"
+    description: "Draft response letter to IRS notice"
+    filename: notice_response.jinja2
+    variables:
+      required:
+        - client_name
+        - notice_number
+        - notice_date
+        - issue_summary
+        - response_points
+      optional:
+        - attachments
+        - deadline
+    output_format: markdown
+    category: correspondence
+
+  - id: qc_memo
+    type: qc_memo
+    name: "QC Review Memo"
+    description: "Quality control review memo with findings and follow-up items"
+    filename: qc_memo.jinja2
+    variables:
+      required:
+        - client_name
+        - tax_year
+        - reviewer_name
+        - review_date
+        - findings
+      optional:
+        - follow_up_items
+    output_format: markdown
+    category: internal
+
+  - id: extraction_summary
+    type: extraction_result
+    name: "Document Extraction Summary"
+    description: "Structured data extraction summary with confidence scores"
+    filename: extraction_summary.jinja2
+    variables:
+      required:
+        - document_name
+        - extraction_date
+        - fields
+      optional:
+        - confidence_scores
+        - exceptions
+    output_format: markdown
+    category: extraction

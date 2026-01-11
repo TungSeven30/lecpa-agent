@@ -38,7 +38,7 @@ class ChatResponse(BaseModel):
     intent: str | None = None
 
 
-@router.post("")
+@router.post("", response_model=None)
 async def chat(
     request: ChatRequest,
     db: AsyncSession = Depends(get_async_db),

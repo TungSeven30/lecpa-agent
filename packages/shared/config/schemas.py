@@ -131,3 +131,30 @@ class FolderRulesConfig(BaseModel):
     doc_tags: list[DocTagRule] = Field(default_factory=list)
     allowed_extensions: list[str] = Field(default_factory=list)
     ignore_patterns: list[str] = Field(default_factory=list)
+
+
+class TemplateMetadata(BaseModel):
+    """Template metadata from registry.
+
+    Defines template properties including required/optional variables,
+    output format, and categorization for discovery.
+    """
+
+    id: str
+    type: str  # maps to ArtifactType enum
+    name: str
+    description: str
+    filename: str
+    variables: dict[str, list[str]] = Field(default_factory=dict)
+    output_format: str = "markdown"  # markdown, json, html
+    category: str  # communication, intake, correspondence, internal, extraction
+
+
+class TemplatesConfig(BaseModel):
+    """Template registry configuration.
+
+    Contains all template definitions loaded from metadata.yaml.
+    Enables dynamic template discovery and validation.
+    """
+
+    templates: list[TemplateMetadata] = Field(default_factory=list)

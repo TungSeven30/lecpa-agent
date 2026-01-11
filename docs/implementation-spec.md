@@ -1,8 +1,49 @@
 # Krystal Le Agent (CPA Firm Internal AI) — Implementation Spec for Claude Code Opus 4.5
-**Version:** 1.0  
-**Date:** 2026-01-09  
-**Owner:** Krystal Le CPA (Internal)  
+**Version:** 1.1
+**Date:** 2026-01-10
+**Owner:** Krystal Le CPA (Internal)
 **Scope:** Internal-only assistant for tax season workflow acceleration (1040 + business returns)
+
+---
+
+## Implementation Status
+
+| Milestone | Status | Completed Date | Notes |
+|-----------|--------|----------------|-------|
+| **M1 (Core)** | ✅ Complete | 2026-01-10 | Full ingestion pipeline, hybrid search, chat with citations |
+| **M2 (TaxDome)** | 🔲 Not Started | — | Windows sync agent pending |
+| **M3 (Artifacts)** | ✅ Complete | 2026-01-10 | Template renderer, 6 Jinja2 templates, artifact storage, IntakeAgent |
+| **M4 (Extraction)** | 🔲 Not Started | — | — |
+
+### M1 Completion Details
+- Docker Compose infrastructure (Postgres+pgvector, Redis, MinIO) ✓
+- Document upload API with automatic ingestion trigger ✓
+- Full ingestion pipeline: extract → OCR fallback → canonicalize → chunk → embed ✓
+- Hybrid search: pgvector (0.7) + tsvector (0.3) combined scoring ✓
+- Chat endpoint with intent classification and document citations ✓
+- SSE streaming with citations event ✓
+
+### M3 Completion Details
+- Template rendering service with Jinja2 and custom filters ✓
+- 6 production templates: missing_docs_email, organizer_checklist, notice_response, qc_memo, extraction_summary, metadata registry ✓
+- Template context service for database entity preparation ✓
+- IntakeAgent subagent for LLM-powered document analysis ✓
+- MCP servers for template operations and artifact storage ✓
+- Frontend artifact viewer components ✓
+- Artifact storage in PostgreSQL ✓
+
+### Storage Abstraction Implementation (Bonus)
+- Abstract StorageBackend interface ✓
+- Filesystem backend for NAS deployment ✓
+- Database migration: s3_key → storage_key ✓
+- Updated document upload/download routes ✓
+- Worker ingestion pipeline updated ✓
+
+### NAS Deployment Infrastructure (Bonus)
+- docker-compose.nas.yml for Synology Container Station ✓
+- Dockerfiles for API, Worker, Web services ✓
+- Direct filesystem mounting to `/volume1/LeCPA/ClientFiles/` ✓
+- Production-ready configuration with health checks ✓
 
 ---
 
@@ -334,19 +375,28 @@ krystal-le-agent/
 ---
 
 ## 12) Implementation Milestones
-### M1 (Core)
-- docker-compose runs: api/web/worker/postgres/redis/minio
-- upload docs manually + ingest + RAG chat + citations
+
+### M1 (Core) — ✅ COMPLETE
+- [x] docker-compose runs: api/web/worker/postgres/redis/minio
+- [x] upload docs manually + ingest + RAG chat + citations
+- [x] Hybrid search with pgvector + tsvector
+- [x] Chat endpoint with intent classification
+- [x] SSE streaming with citations
 
 ### M2 (TaxDome Drive ingestion)
-- Windows sync agent + ingestion trigger + folder mapping
+- [ ] Windows sync agent + ingestion trigger + folder mapping
+- [ ] File watcher with SHA256 dedup
+- [ ] Auto-detect TaxDome Drive root
 
 ### M3 (Artifacts)
-- templates + renderer + save artifacts to cases
+- [ ] templates + renderer + save artifacts to cases
+- [ ] Missing docs email generation
+- [ ] Organizer checklist generation
 
 ### M4 (Extraction + Notice)
-- basic W-2/1099 extraction JSON
-- notice response draft
+- [ ] basic W-2/1099 extraction JSON
+- [ ] notice response draft
+- [ ] QC memo generation
 
 ---
 

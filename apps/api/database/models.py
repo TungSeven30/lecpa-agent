@@ -119,7 +119,7 @@ class Document(Base):
     )
     filename: Mapped[str] = mapped_column(String(255))
     original_filename: Mapped[str] = mapped_column(String(255))
-    s3_key: Mapped[str] = mapped_column(String(512), unique=True)
+    storage_key: Mapped[str] = mapped_column(String(512), unique=True)
     mime_type: Mapped[str] = mapped_column(String(100))
     file_size: Mapped[int] = mapped_column(Integer)
     page_count: Mapped[int | None] = mapped_column(Integer)
@@ -264,7 +264,7 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String(50), index=True)
     resource_type: Mapped[str] = mapped_column(String(50), index=True)
     resource_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
-    metadata: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    event_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     ip_address: Mapped[str | None] = mapped_column(String(45))
     user_agent: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
