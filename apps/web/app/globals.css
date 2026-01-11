@@ -4,28 +4,101 @@
 
 @layer base {
   :root {
-    /* Design tokens for shadcn/ui compatibility */
+    /* Border radius */
+    --radius: 0.5rem;
+
+    /* Core semantic colors - Light mode */
     --background: 255 255 255;
     --foreground: 17 24 39;
+
+    /* Card surfaces */
+    --card: 255 255 255;
+    --card-foreground: 17 24 39;
+
+    /* Muted/secondary content */
     --muted: 243 244 246;
     --muted-foreground: 107 114 128;
+
+    /* Accent/hover states */
+    --accent: 243 244 246;
+    --accent-foreground: 17 24 39;
+
+    /* Borders and inputs */
     --border: 229 231 235;
-    --input: 209 213 219;
+    --input: 229 231 235;
     --ring: 59 130 246;
     --ring-offset: 255 255 255;
+
+    /* Sidebar - dark sidebar on light background */
+    --sidebar: 17 24 39;
+    --sidebar-foreground: 255 255 255;
+    --sidebar-muted: 156 163 175;
+    --sidebar-accent: 31 41 55;
+    --sidebar-border: 31 41 55;
+
+    /* Status colors */
+    --success: 220 252 231;
+    --success-foreground: 22 101 52;
+    --warning: 254 249 195;
+    --warning-foreground: 133 77 14;
+    --error: 254 226 226;
+    --error-foreground: 153 27 27;
+    --info: 219 234 254;
+    --info-foreground: 30 64 175;
+  }
+
+  .dark {
+    /* Core semantic colors - Dark mode */
+    --background: 17 24 39;
+    --foreground: 243 244 246;
+
+    /* Card surfaces */
+    --card: 31 41 55;
+    --card-foreground: 243 244 246;
+
+    /* Muted/secondary content */
+    --muted: 55 65 81;
+    --muted-foreground: 156 163 175;
+
+    /* Accent/hover states */
+    --accent: 55 65 81;
+    --accent-foreground: 243 244 246;
+
+    /* Borders and inputs */
+    --border: 55 65 81;
+    --input: 55 65 81;
+    --ring: 59 130 246;
+    --ring-offset: 17 24 39;
+
+    /* Sidebar - slightly lighter than background in dark mode */
+    --sidebar: 31 41 55;
+    --sidebar-foreground: 243 244 246;
+    --sidebar-muted: 156 163 175;
+    --sidebar-accent: 55 65 81;
+    --sidebar-border: 55 65 81;
+
+    /* Status colors - darker backgrounds for dark mode */
+    --success: 20 83 45;
+    --success-foreground: 187 247 208;
+    --warning: 113 63 18;
+    --warning-foreground: 254 240 138;
+    --error: 127 29 29;
+    --error-foreground: 254 202 202;
+    --info: 30 58 138;
+    --info-foreground: 191 219 254;
   }
 
   * {
-    @apply border-gray-200;
+    @apply border-border;
   }
 
   body {
-    @apply bg-white text-gray-900;
+    @apply bg-background text-foreground;
   }
 
   /* Focus visible styles for keyboard navigation */
   :focus-visible {
-    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }
 
@@ -44,11 +117,10 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgb(203 213 225);
-    border-radius: 3px;
+    @apply bg-muted-foreground/30 rounded;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(148 163 184);
+    @apply bg-muted-foreground/50;
   }
 }

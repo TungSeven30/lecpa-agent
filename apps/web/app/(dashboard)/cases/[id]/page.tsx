@@ -18,14 +18,15 @@ import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 type Tab = 'documents' | 'chat' | 'artifacts';
+type BadgeVariant = 'default' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 
-const statusColors: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
-    open: 'default',
+const statusColors: Record<string, BadgeVariant> = {
+    open: 'info',
     in_progress: 'default',
     pending_review: 'warning',
     needs_info: 'error',
     completed: 'success',
-    closed: 'default',
+    closed: 'secondary',
 };
 
 const tabs: Array<{ id: Tab; label: string; icon: typeof FileText }> = [
@@ -77,7 +78,7 @@ export default function CaseDetailPage() {
     if (isLoading) {
         return (
             <div className="flex h-full items-center justify-center">
-                <div className="text-gray-500">Loading case...</div>
+                <div className="text-muted-foreground">Loading case...</div>
             </div>
         );
     }
@@ -86,7 +87,7 @@ export default function CaseDetailPage() {
         return (
             <div className="flex h-full items-center justify-center">
                 <div className="text-center">
-                    <p className="text-gray-500">Case not found</p>
+                    <p className="text-muted-foreground">Case not found</p>
                     <Link href="/cases">
                         <Button variant="outline" className="mt-4">
                             <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -101,7 +102,7 @@ export default function CaseDetailPage() {
     return (
         <div className="flex h-full flex-col">
             {/* Header */}
-            <div className="border-b bg-white px-6 py-4">
+            <div className="border-b border-border bg-card px-6 py-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/cases" aria-label="Back to cases">
@@ -115,14 +116,14 @@ export default function CaseDetailPage() {
                         </Link>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-xl font-semibold text-gray-900">
+                                <h1 className="text-xl font-semibold text-foreground">
                                     {caseData.client?.name || 'Unknown Client'}
                                 </h1>
                                 <Badge variant={statusColors[caseData.status] || 'default'}>
-                                    {caseData.status.replace('_', ' ')}
+                                    {caseData.status.replace(/_/g, ' ')}
                                 </Badge>
                             </div>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-muted-foreground">
                                 {caseData.client?.client_code} &bull; {caseData.case_type}{' '}
                                 &bull; {caseData.year}
                             </p>
@@ -138,7 +139,7 @@ export default function CaseDetailPage() {
                 <div
                     role="tablist"
                     aria-label="Case sections"
-                    className="-mb-px mt-4 flex gap-1 border-b"
+                    className="-mb-px mt-4 flex gap-1 border-b border-border"
                 >
                     {tabs.map((tab, index) => {
                         const isActive = activeTab === tab.id;
@@ -157,7 +158,7 @@ export default function CaseDetailPage() {
                                     'flex min-h-[44px] items-center gap-2 border-b-2 px-4 text-sm font-medium transition-colors',
                                     isActive
                                         ? 'border-primary-600 text-primary-600'
-                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                        : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
                                 )}
                             >
                                 <TabIcon className="h-4 w-4" aria-hidden="true" />
@@ -169,7 +170,7 @@ export default function CaseDetailPage() {
             </div>
 
             {/* Tab Panels - Accessible */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden bg-background">
                 <div
                     id={`${tabIdPrefix}-panel-documents`}
                     role="tabpanel"

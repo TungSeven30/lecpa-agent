@@ -13,6 +13,7 @@ export interface InputProps
  * Input component with error state and optional label.
  *
  * Accessible with proper focus indicators and error messaging.
+ * Uses semantic color tokens that support dark mode.
  *
  * Args:
  *     error: Error message to display below input
@@ -30,7 +31,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 {label && (
                     <label
                         htmlFor={inputId}
-                        className="mb-1 block text-sm font-medium text-gray-700"
+                        className="mb-1 block text-sm font-medium text-foreground"
                     >
                         {label}
                     </label>
@@ -39,8 +40,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                     id={inputId}
                     type={type}
                     className={cn(
-                        'flex min-h-[44px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 file:border-0 file:bg-transparent file:text-sm file:font-medium',
-                        error && 'border-red-500 focus-visible:ring-red-500',
+                        'flex min-h-[44px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 file:border-0 file:bg-transparent file:text-sm file:font-medium',
+                        error && 'border-error-foreground focus-visible:ring-error-foreground',
                         className
                     )}
                     ref={ref}
@@ -49,7 +50,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                     {...props}
                 />
                 {error && (
-                    <p id={errorId} className="mt-1 text-sm text-red-600" role="alert">
+                    <p
+                        id={errorId}
+                        className="mt-1 text-sm text-error-foreground"
+                        role="alert"
+                    >
                         {error}
                     </p>
                 )}
