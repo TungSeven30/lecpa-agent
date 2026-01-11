@@ -89,3 +89,12 @@ celerybeat.pid
 
 # MinIO/S3 local data
 minio-data/
+
+# Claude Code local settings
+.claude/
+
+# Serena MCP local config
+.serena/
+
+# TypeScript build info
+*.tsbuildinfo
