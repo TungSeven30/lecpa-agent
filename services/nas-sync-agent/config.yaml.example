@@ -1,0 +1,102 @@
+# NAS Sync Agent Configuration
+# Copy this file to config.yaml and customize for your environment
+
+nas:
+  # Path to the NAS client files directory
+  root_path: /volume1/LeCPA/ClientFiles
+  # Watch subdirectories recursively
+  watch_recursive: true
+  # Wait time before processing rapid file changes (seconds)
+  debounce_seconds: 2
+
+api:
+  # Le CPA Agent API base URL
+  base_url: http://lecpa-api:8000
+  # API key for authentication (use environment variable)
+  api_key: ${SYNC_AGENT_API_KEY}
+  # Request timeout in seconds
+  timeout_seconds: 30
+  # Number of retry attempts for failed requests
+  retry_attempts: 3
+
+parsing:
+  # Patterns to match client folder names
+  # Named groups: code, name
+  client_patterns:
+    - pattern: "^(?P<code>1\\d{3})_(?P<name>.+)$"
+      type: individual
+    - pattern: "^(?P<code>2\\d{3})_(?P<name>.+)$"
+      type: business
+
+  # Pattern to match year folders
+  year_pattern: "^(?P<year>20\\d{2})$"
+
+  # Special folders that get tagged
+  special_folders:
+    - folder: Permanent
+      tag: permanent
+      is_permanent: true
+    - folder: Tax Notice
+      tag: tax_notice
+    - folder: Tax Transcript
+      tag: transcript
+    - folder: Tax Emails
+      tag: emails
+    - folder: Paperworks
+      tag: paperwork
+    - folder: Invoice
+      tag: invoice
+    - folder: IRS Notices
+      tag: irs_notice
+
+  # File patterns to skip (glob syntax)
+  skip_patterns:
+    - "*.7z"
+    - "*.zip"
+    - "*.rar"
+    - "*.lnk"
+    - ".DS_Store"
+    - "Thumbs.db"
+    - "Icon*"
+    - "*.tmp"
+    - "~$*"  # Office temp files
+
+  # Patterns to auto-tag documents (regex)
+  document_tags:
+    - pattern: "(?i)w-?2"
+      tag: W2
+    - pattern: "(?i)1099"
+      tag: "1099"
+    - pattern: "(?i)k-?1|k1p|k1s"
+      tag: K1
+    - pattern: "(?i)1098"
+      tag: "1098"
+    - pattern: "(?i)notice|cp\\s?\\d+|lt\\s?\\d+"
+      tag: IRS_NOTICE
+    - pattern: "(?i)transcript"
+      tag: TRANSCRIPT
+
+state:
+  # Path to SQLite database for local state tracking
+  db_path: /app/state/sync_state.db
+
+digest:
+  # Enable daily digest emails
+  enabled: true
+  # Time to send digest (24h format)
+  send_time: "08:00"
+  # Email recipients
+  recipients:
+    - admin@lecpa.com
+  # SMTP configuration
+  smtp:
+    host: ${SMTP_HOST}
+    port: 587
+    user: ${SMTP_USER}
+    password: ${SMTP_PASSWORD}
+
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: INFO
+  # Output format: json or console
+  format: json

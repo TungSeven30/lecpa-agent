@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from routers import admin, artifacts, auth, cases, chat, clients, documents, search
+from routers import admin, artifacts, auth, cases, chat, clients, documents, ingest, search
 
 # Configure structured logging
 structlog.configure(
@@ -55,6 +55,7 @@ app.include_router(search.router, prefix="/search", tags=["Search"])
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(artifacts.router, prefix="/artifacts", tags=["Artifacts"])
 app.include_router(admin.router, prefix="/admin", tags=["Admin"])
+app.include_router(ingest.router, prefix="/ingest", tags=["NAS Sync"])
 
 
 @app.get("/health")

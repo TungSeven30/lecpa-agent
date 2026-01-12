@@ -1,0 +1,46 @@
+[project]
+name = "nas-sync-agent"
+version = "0.1.0"
+description = "NAS filesystem sync agent for Le CPA Agent"
+requires-python = ">=3.11"
+dependencies = [
+    "watchdog>=3.0.0",
+    "httpx>=0.26.0",
+    "tenacity>=8.2.0",
+    "structlog>=24.1.0",
+    "pyyaml>=6.0",
+    "orjson>=3.9.0",
+    "typer>=0.9.0",
+    "shared",
+]
+
+[tool.uv.sources]
+shared = { workspace = true }
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+]
+
+[project.scripts]
+nas-sync = "nas_sync.main:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["B008"]  # Allow typer.Option in argument defaults (standard CLI pattern)
+
+[tool.mypy]
+python_version = "3.11"
+strict = true

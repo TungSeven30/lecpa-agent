@@ -40,6 +40,22 @@ class Client(Base):
     phone: Mapped[str | None] = mapped_column(String(50))
     address: Mapped[str | None] = mapped_column(Text)
     notes: Mapped[str | None] = mapped_column(Text)
+
+    # M2: NAS sync fields
+    client_type: Mapped[str] = mapped_column(
+        String(20), default="individual"
+    )  # individual, business
+    nas_folder_path: Mapped[str | None] = mapped_column(
+        Text, index=True
+    )  # Relative path on NAS
+    approval_status: Mapped[str] = mapped_column(
+        String(20), default="approved"
+    )  # pending, approved, rejected
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -49,6 +65,18 @@ class Client(Base):
 
     # Relationships
     cases: Mapped[list["Case"]] = relationship(back_populates="client")
+    # M2: Relationships to business entities (this client owns)
+    owned_businesses: Mapped[list["ClientRelationship"]] = relationship(
+        "ClientRelationship",
+        foreign_keys="ClientRelationship.individual_id",
+        back_populates="individual",
+    )
+    # M2: Relationships to individuals (for business clients)
+    owners: Mapped[list["ClientRelationship"]] = relationship(
+        "ClientRelationship",
+        foreign_keys="ClientRelationship.business_id",
+        back_populates="business",
+    )
 
 
 class Case(Base):
@@ -88,6 +116,13 @@ class Case(Base):
         default="intake",
     )
     notes: Mapped[str | None] = mapped_column(Text)
+
+    # M2: NAS sync fields
+    is_permanent: Mapped[bool] = mapped_column(
+        Boolean, default=False
+    )  # For "Permanent" pseudo-case
+    nas_year_path: Mapped[str | None] = mapped_column(Text)  # Path to year folder on NAS
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -150,6 +185,29 @@ class Document(Base):
 
     # Auto-detected tags
     tags: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+
+    # M2: NAS sync fields
+    nas_relative_path: Mapped[str | None] = mapped_column(
+        Text
+    )  # Path relative to client folder
+    nas_full_path: Mapped[str | None] = mapped_column(
+        Text, unique=True, index=True
+    )  # Full NAS path for dedup
+    is_permanent: Mapped[bool] = mapped_column(
+        Boolean, default=False
+    )  # From Permanent folder
+    folder_tag: Mapped[str | None] = mapped_column(
+        String(50), index=True
+    )  # tax_notice, transcript, etc.
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), index=True
+    )  # Soft delete timestamp
+    last_seen_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )  # Last seen during NAS scan
+    file_hash: Mapped[str | None] = mapped_column(
+        String(64), index=True
+    )  # SHA256 hash for dedup
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -295,4 +353,126 @@ class User(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+# =============================================================================
+# M2: NAS Sync Models
+# =============================================================================
+
+
+class ClientRelationship(Base):
+    """Track relationships between individual clients and business entities.
+
+    Created automatically when .lnk shortcut files are detected during NAS sync.
+    For example: An individual client folder containing "2010_Sim Sim Realty LLC.lnk"
+    creates a relationship linking that individual to the business entity.
+    """
+
+    __tablename__ = "client_relationships"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    individual_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("clients.id", ondelete="CASCADE"),
+        index=True,
+    )
+    business_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("clients.id", ondelete="CASCADE"),
+        index=True,
+    )
+    relationship_type: Mapped[str] = mapped_column(
+        String(50), default="owner"
+    )  # owner, partner, shareholder
+    source: Mapped[str] = mapped_column(String(50))  # lnk_shortcut, manual
+    source_path: Mapped[str | None] = mapped_column(Text)  # Path to .lnk file
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    # Relationships
+    individual: Mapped["Client"] = relationship(
+        "Client",
+        foreign_keys=[individual_id],
+        back_populates="owned_businesses",
+    )
+    business: Mapped["Client"] = relationship(
+        "Client",
+        foreign_keys=[business_id],
+        back_populates="owners",
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_client_rel_unique",
+            "individual_id",
+            "business_id",
+            unique=True,
+        ),
+    )
+
+
+class SyncQueueItem(Base):
+    """Queue for new clients/cases detected by NAS sync that need admin approval.
+
+    When the sync agent detects a new client folder or year folder, it creates
+    a queue item that must be approved before documents can be ingested.
+    Items can be auto-approved after a configurable delay (default 4 hours).
+    """
+
+    __tablename__ = "sync_queue"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    item_type: Mapped[str] = mapped_column(String(20))  # client, case
+    nas_path: Mapped[str] = mapped_column(Text, unique=True)  # Full path on NAS
+    parsed_data: Mapped[dict[str, Any]] = mapped_column(
+        JSONB
+    )  # Extracted info (code, name, year, type)
+    status: Mapped[str] = mapped_column(
+        String(20), default="pending", index=True
+    )  # pending, approved, rejected, auto_approved
+    auto_approve_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )  # When to auto-approve
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    notes: Mapped[str | None] = mapped_column(Text)
+
+
+class SyncDigest(Base):
+    """Daily digest of NAS sync activity for email notifications.
+
+    Tracks statistics for each day's sync activity including:
+    - Files processed and failed
+    - New clients and cases detected
+    - Items pending approval
+    """
+
+    __tablename__ = "sync_digest"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    digest_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), unique=True
+    )  # Date of digest (day)
+    files_processed: Mapped[int] = mapped_column(Integer, default=0)
+    files_failed: Mapped[int] = mapped_column(Integer, default=0)
+    new_clients: Mapped[int] = mapped_column(Integer, default=0)
+    new_cases: Mapped[int] = mapped_column(Integer, default=0)
+    items_pending_approval: Mapped[int] = mapped_column(Integer, default=0)
+    error_details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
     )
