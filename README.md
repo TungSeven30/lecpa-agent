@@ -842,8 +842,8 @@ A: Yes, admins can delete documents. This removes them from the system entirely,
 **Q: Does it work with Drake/Lacerte/ProSeries?**
 A: Not directly integrated (yet). Use it alongside your tax software. It helps you find information faster, but you still enter data into your tax software manually.
 
-**Q: Can it pull data from TaxDome?**
-A: Yes! There's a TaxDome sync agent (Windows) that monitors your TaxDome Drive and automatically imports new documents. (See M2 roadmap - coming soon)
+**Q: Can it sync with my NAS automatically?**
+A: Yes! There's a NAS sync agent that monitors your file server and automatically imports new documents. It watches folders like `/ClientFiles/1002_ClientName/2024/` and detects document types automatically.
 
 **Q: What about QuickBooks integration?**
 A: Not currently. You can upload QuickBooks reports as PDFs and search them.
@@ -961,20 +961,26 @@ Submit issues or pull requests on GitHub.
 | Milestone | Status | Description |
 |-----------|--------|-------------|
 | **M1 (Core RAG)** | ✅ Complete | Document ingestion, hybrid search, chat with citations |
-| **M2 (TaxDome Sync)** | 🔄 Planned | Windows sync agent for automatic document ingestion |
+| **M2 (NAS Sync)** | ✅ Complete | NAS filesystem sync agent with folder parsing & approval queue |
 | **M3 (Artifacts)** | ✅ Complete | Email drafts, checklists, IRS responses, QC memos |
-| **M4 (Extraction)** | 🔄 Planned | Automated W-2/1099/K-1 data extraction |
+| **M4 (Extraction)** | ✅ Complete | Automated W-2/1099/K-1 data extraction with confidence scoring |
 
 ### What's Working Now
 
 ✅ **Upload documents** → ✅ **Search instantly** → ✅ **Get cited answers** → ✅ **Generate emails/checklists**
 
-### Coming Soon
+### What's Working Now (Extended)
 
-🔄 **TaxDome Auto-Sync** - Automatically pull new documents from TaxDome Drive
-🔄 **Form Extraction** - Auto-populate tax software with W-2/1099 data
+✅ **NAS Auto-Sync** - Automatically detects new files on your NAS and ingests them
+✅ **Form Extraction** - Auto-extracts data from W-2s, 1099s, and K-1s with confidence scoring
+✅ **Smart Document Tags** - Auto-detects document types (W2, 1099, K1, IRS notices)
+✅ **Admin Approval Queue** - New clients/cases queued for admin review before ingestion
+
+### Future Enhancements
+
 🔄 **Drake Integration** - Direct export to Drake Tax Cabinet
 🔄 **Mobile App** - Access from phone/tablet
+🔄 **TaxDome Portal Integration** - Client upload portal connection
 
 ---
 
