@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Le CPA Agent is an internal AI assistant for a CPA firm, designed to accelerate tax season workflows (1040 + business returns). It provides RAG-powered chat with document citations, generates artifacts (email drafts, checklists, IRS notice responses), and ingests documents from TaxDome Drive.
+Le CPA Agent is an internal AI assistant for a CPA firm, designed to accelerate tax season workflows (1040 + business returns). It provides RAG-powered chat with document citations, generates artifacts (email drafts, checklists, IRS notice responses), and ingests documents from the firm's NAS.
 
 See `docs/implementation-spec.md` for the full implementation specification.
 
@@ -13,7 +13,7 @@ See `docs/implementation-spec.md` for the full implementation specification.
 | Milestone | Status | Description |
 |-----------|--------|-------------|
 | **M1 (Core)** | ✅ Complete | Docker infra, document ingestion, hybrid search, chat with citations |
-| **M2 (TaxDome)** | 🔲 Not Started | Windows sync agent, folder mapping |
+| **M2 (NAS Sync)** | ✅ Complete | NAS sync agent, folder parsing, admin approval queue, client relationships |
 | **M3 (Artifacts)** | ✅ Complete | Template renderer, 6 Jinja2 templates, artifact storage, IntakeAgent |
 | **M4 (Extraction)** | ✅ Complete | ExtractionAgent, NoticeAgent, QCAgent, auto-extraction worker |
 
@@ -25,7 +25,7 @@ apps/
   api/                    # FastAPI backend (orchestrator, auth, case management)
 services/
   worker/                 # Celery workers (ingestion, OCR, embeddings)
-  taxdome-sync-agent/     # Windows service syncing TaxDome Drive to S3/MinIO
+  nas-sync-agent/         # Filesystem watcher syncing NAS to database
   mcp-kb-server/          # MCP server for document search/templates
   mcp-case-server/        # MCP server for case management
 packages/
@@ -34,7 +34,7 @@ config/
   model_router.yaml       # LLM provider/model configuration
   embeddings.yaml         # Embedding model settings (BGE models)
   ocr.yaml                # OCR fallback settings
-  folder_rules.yaml       # TaxDome folder parsing rules
+  folder_rules.yaml       # NAS folder parsing rules
   templates/*.jinja2      # Jinja2 templates for artifacts
 ```
 
@@ -168,7 +168,7 @@ AUTO_EXTRACT_ENABLED=    # Enable auto-extraction for W2/1099/K1 documents (defa
 
 ## Domain-Specific Context
 
-- **TaxDome folders** follow pattern: `{client_code} {client_name}` (e.g., `TH4 10 tax Returns - Hioki`)
+- **NAS folders** follow pattern: `{code}_{name}` where 1xxx=individual, 2xxx=business (e.g., `1002_Nguyen, Billy`)
 - **Document tags** auto-detected: W2, 1099, K1, IRS_NOTICE
 - **SSNs** must be masked in UI (show only last 4 digits)
 - **Audit logging** required for: doc access, search queries, artifact exports
