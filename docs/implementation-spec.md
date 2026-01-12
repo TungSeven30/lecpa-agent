@@ -11,7 +11,7 @@
 | Milestone | Status | Completed Date | Notes |
 |-----------|--------|----------------|-------|
 | **M1 (Core)** | ✅ Complete | 2026-01-10 | Full ingestion pipeline, hybrid search, chat with citations |
-| **M2 (TaxDome)** | 🔲 Not Started | — | Windows sync agent pending |
+| **M2 (NAS Sync)** | ✅ Complete | 2026-01-11 | NAS sync agent, folder parsing, admin approval queue |
 | **M3 (Artifacts)** | ✅ Complete | 2026-01-10 | Template renderer, 6 Jinja2 templates, artifact storage, IntakeAgent |
 | **M4 (Extraction)** | ✅ Complete | 2026-01-11 | ExtractionAgent, NoticeAgent, QCAgent, auto-extraction worker |
 
@@ -22,6 +22,20 @@
 - Hybrid search: pgvector (0.7) + tsvector (0.3) combined scoring ✓
 - Chat endpoint with intent classification and document citations ✓
 - SSE streaming with citations event ✓
+
+### M2 Completion Details
+- NAS Sync Agent service with real-time filesystem monitoring ✓
+- FolderParser: Extract client/case/document info from NAS paths ✓
+- LnkParser: Parse Windows shortcuts for client→business relationships ✓
+- NASWatcher: Watchdog-based monitoring with 2-second debouncing ✓
+- FullScanner: Initial backfill of existing NAS files ✓
+- Admin approval queue for new clients/cases (auto-approve after 4h) ✓
+- Client relationships table (individual↔business links from .lnk files) ✓
+- Soft delete with 90-day retention ✓
+- Daily digest email sender ✓
+- API endpoints: file-arrived, file-deleted, heartbeat, sync-queue, relationship, sync-status ✓
+- Admin UI: Sync queue management page ✓
+- 32 unit tests for parser and lnk_parser ✓
 
 ### M3 Completion Details
 - Template rendering service with Jinja2 and custom filters ✓
@@ -59,17 +73,16 @@
 
 ---
 
-## 0) Goals (What “done” looks like)
-Build an internal web app (“Krystal Le Agent”) that:
+## 0) Goals (What "done" looks like)
+Build an internal web app ("Le CPA Agent") that:
 - Lets staff chat with a firm assistant that can **search and cite** internal firm guidance + client documents.
 - Produces **artifacts**: missing-docs email drafts, organizer checklists, IRS notice response drafts, QC memos.
-- Ingests documents from **TaxDome Document system** via **TaxDome Drive** (virtual drive), and indexes them for retrieval.
+- Ingests documents from the firm's **NAS** via real-time filesystem monitoring, and indexes them for retrieval.
 - Uses **Claude Opus 4.5 as default model** everywhere, but can switch models/providers via config without refactoring.
 - Uses **OCR as fallback-only** for scanned/image PDFs.
 
 Non-goals (v1):
-- Full TaxDome automation via API (assume no public API; use Drive + optional Zapier webhooks).
-- Drake UI automation (use file exports/imports and a “bridge” approach).
+- Drake UI automation (use file exports/imports and a "bridge" approach).
 
 ---
 
@@ -95,10 +108,11 @@ Non-goals (v1):
 - Scheduled refresh jobs (optional: authoritative tax sources snapshots)
 - (Optional) QC batch jobs
 
-4) **TaxDome Drive Sync Agent (Windows service)**
-- Watches TaxDome Drive folders for new/updated files
-- Mirrors to S3/MinIO + notifies API to ingest
-- Maintains local state to avoid duplicates (SHA256)
+4) **NAS Sync Agent (Docker container)**
+- Watches NAS folders for new/updated files via watchdog
+- Notifies API to ingest via `/ingest/file-arrived`
+- Maintains file hash (SHA256) for deduplication
+- Queues new clients/cases for admin approval
 
 ### Data Stores
 - **Postgres** (cases, docs metadata, audit logs)
@@ -167,74 +181,118 @@ tesseract:
 
 ---
 
-## 4) Document Access: TaxDome Drive (No Dropbox)
+## 4) Document Access: NAS Filesystem
 ### Approach
-- Install **TaxDome Drive** on a dedicated Windows machine (physical or hosted).
-- Sync Agent mirrors TaxDome Drive content into our own storage for indexing.
+- Mount the firm's NAS directly to the Docker container or host machine.
+- Sync Agent monitors the NAS filesystem for changes using watchdog.
+- Files are processed in-place (no S3 upload needed for NAS deployment).
 
-### Folder Parsing
-TaxDome folders appear like: `TH4 10 tax Returns - Hioki`, `MM7 1602 Martinez LLC`, etc.
-
-#### `config/folder_rules.yaml` (example)
-```yaml
-source: taxdome_drive
-roots:
-  - "X:\TaxDome Drive\Clients"  # replace at install or auto-detect
-
-client_folder:
-  pattern: "^(?P<client_code>[A-Z0-9]{2,5})\s+(?P<client_name>.+)$"
-
-case_detection:
-  - name: "tax_year_folder"
-    pattern: "^(?P<year>20\d{2})$"
-    case_type: "tax_return"
-
-doc_tags:
-  - match: "(?i)w-?2"
-    tag: "W2"
-  - match: "(?i)1099"
-    tag: "1099"
-  - match: "(?i)k-?1"
-    tag: "K1"
-  - match: "(?i)notice|cp\s?\d+|lt\s?\d+"
-    tag: "IRS_NOTICE"
+### NAS Folder Structure
+```
+/volume1/LeCPA/ClientFiles/
+├── 1001_Toh, Wei Ming/           # Individual client (1xxx)
+│   ├── 2024/                     # Year folder → Case
+│   │   ├── 2024 W-2.pdf
+│   │   └── 2024 K-1s/
+│   ├── Permanent/                # Evergreen documents
+│   ├── Tax Notice/               # IRS notices
+│   └── 2010_Business.lnk         # Link to related business
+├── 2010_Sim Sim Realty LLC/      # Business entity (2xxx)
+│   ├── 2024/
+│   └── Permanent/
 ```
 
-### Drive Root Auto-Detect (Setup)
-If the drive letter/path is unknown, implement a setup step:
-- Scan mounted drives for directory name containing “TaxDome Drive”
-- Save discovered root into config file or DB settings
+### Folder Parsing Rules
+Configured in `services/nas-sync-agent/config.yaml`:
+```yaml
+parsing:
+  client_patterns:
+    - pattern: "^(?P<code>1\\d{3})_(?P<name>.+)$"
+      type: individual
+    - pattern: "^(?P<code>2\\d{3})_(?P<name>.+)$"
+      type: business
+
+  year_pattern: "^(?P<year>20\\d{2})$"
+
+  special_folders:
+    - folder: Permanent
+      tag: permanent
+      is_permanent: true
+    - folder: Tax Notice
+      tag: tax_notice
+    - folder: Tax Transcript
+      tag: transcript
+
+  skip_patterns:
+    - "*.7z"
+    - "*.zip"
+    - "*.lnk"
+    - ".DS_Store"
+    - "~$*"
+
+  document_tags:
+    - pattern: "(?i)w-?2"
+      tag: W2
+    - pattern: "(?i)1099"
+      tag: "1099"
+    - pattern: "(?i)k-?1|k1p|k1s"
+      tag: K1
+    - pattern: "(?i)notice|cp\\s?\\d+|lt\\s?\\d+"
+      tag: IRS_NOTICE
+```
 
 ---
 
-## 5) TaxDome Sync Agent (Windows)
+## 5) NAS Sync Agent
 ### Service Location
-`services/taxdome-sync-agent/`
+`services/nas-sync-agent/`
 
-### Responsibilities
-- Monitor folder tree under TaxDome Drive root(s)
-- Detect new/changed files using:
-  - last modified time + file size
-  - SHA256 hash (for definitive de-dup)
-- Upload file to S3/MinIO with stable key:
-  - `taxdome/{client_code}/{year}/{relative_path}/{filename}`
-- Notify API: `POST /ingest/file-arrived`
-- Keep a local sqlite db `sync_state.db`:
-  - filepath, modified_time, size, sha256, last_uploaded_at, last_seen_at
+### Components
+- **FolderParser**: Extracts client/case/document info from NAS paths
+- **LnkParser**: Parses Windows `.lnk` shortcuts for client relationships
+- **NASWatcher**: Real-time filesystem monitoring with watchdog
+- **FullScanner**: Initial backfill of existing files
+- **APIClient**: HTTP client for API communication with retry logic
+- **DigestSender**: Daily summary email sender
+
+### CLI Commands
+```bash
+nas-sync watch      # Start real-time filesystem watcher
+nas-sync scan       # Full scan for initial backfill
+nas-sync digest     # Send daily digest email manually
+nas-sync init_config # Generate default config file
+nas-sync validate   # Validate configuration
+```
+
+### API Endpoints
+- `POST /ingest/file-arrived` - New/modified file notification
+- `POST /ingest/file-deleted` - File deletion (soft delete)
+- `POST /ingest/heartbeat` - Agent health check
+- `GET /ingest/sync-queue` - List pending approvals
+- `POST /ingest/sync-queue/{id}/approve` - Approve client/case
+- `POST /ingest/sync-queue/{id}/reject` - Reject item
+- `POST /ingest/relationship` - Record client relationship
+- `GET /ingest/sync-status` - Dashboard statistics
+
+### Admin Approval Workflow
+New clients/cases detected on NAS are queued for admin approval:
+- Default auto-approve after 4 hours (configurable)
+- Admin UI shows pending items with approve/reject buttons
+- Client relationships from `.lnk` files auto-created
 
 ### Tech Stack
 - Python 3.11+
-- `watchdog` (filesystem events) + periodic scan fallback
-- `boto3` (S3)
-- `requests` (API notify)
-- Run as:
-  - Windows Service (preferred) OR
-  - scheduled task + long-running process
+- `watchdog` for filesystem events
+- `httpx` + `tenacity` for API calls with retry
+- `structlog` for structured logging
+- `typer` for CLI
+- Run as Docker container with NAS volume mount
 
 ### Failure Handling
-- Retries with backoff
-- If upload fails: queue and retry
-- Never delete/modify the TaxDome Drive contents
+- Debounced events (2-second window) to handle rapid changes
+- Exponential backoff on API failures
+- Soft delete with 90-day retention
+- Never modify NAS contents (read-only access)
 
 ---
 
@@ -310,17 +368,12 @@ Implement MCP servers so agents use tools consistently.
 - `get_case_summary(case_id)`
 - `write_artifact(case_id, kind, content)`
 
-3) **mcp_taxdome_drive_server**
-- Primarily for internal abstraction; actual access via sync agent + DB.
-- `list_client_folders()`
-- `resolve_path_to_client(path)`
-
-4) **mcp_drake_bridge_server** (v1.1)
+3) **mcp_drake_bridge_server** (v1.1)
 - `import_drake_export(csv_path)`
 - `get_client_index(query)`
 - `generate_drake_packet(case_id)` -> exports artifacts for Drake cabinet
 
-5) **mcp_law_server** (v1.1)
+4) **mcp_law_server** (v1.1)
 - `search_authoritative(query)`
 - `fetch_and_snapshot(url)`
 
@@ -328,13 +381,13 @@ Implement MCP servers so agents use tools consistently.
 
 ## 9) Repo Layout
 ```text
-krystal-le-agent/
+lecpa-agent/
   apps/
     web/                        # Next.js UI
     api/                        # FastAPI orchestrator
   services/
     worker/                     # Celery ingestion + OCR + embeddings
-    taxdome-sync-agent/         # Windows sync agent for TaxDome Drive
+    nas-sync-agent/             # NAS filesystem sync agent
     mcp-kb-server/
     mcp-case-server/
     mcp-drake-bridge-server/    # optional v1.1
@@ -343,6 +396,7 @@ krystal-le-agent/
     shared/                     # schemas, typed contracts
   infra/
     docker-compose.yml
+    docker-compose.nas.yml      # NAS deployment config
     terraform/                  # optional
   config/
     model_router.yaml
@@ -368,12 +422,12 @@ krystal-le-agent/
 ---
 
 ## 11) Acceptance Tests (Must Pass)
-1) **TaxDome Drive file -> searchable**
-- Drop a PDF into a client folder in TaxDome Drive
-- Within N minutes: doc appears in Case UI and can be searched
+1) **NAS file -> searchable**
+- Drop a PDF into a client folder on NAS
+- Within 1 minute: doc appears in Case UI and can be searched
 
 2) **Chat with citations**
-- Ask: “Summarize this client’s W-2 and 1099s”
+- Ask: "Summarize this client's W-2 and 1099s"
 - Response includes citations pointing to doc pages/chunks
 
 3) **Missing docs email**
@@ -383,6 +437,15 @@ krystal-le-agent/
 4) **OCR fallback**
 - Upload a scanned notice PDF (image-only)
 - System runs OCR automatically and answer cites OCR pages
+
+5) **Admin approval workflow**
+- Create new client folder on NAS
+- Item appears in admin sync queue
+- Approve/reject works correctly
+
+6) **Client relationships**
+- Add `.lnk` shortcut to individual client folder pointing to business
+- Relationship auto-created in database
 
 ---
 
@@ -395,26 +458,35 @@ krystal-le-agent/
 - [x] Chat endpoint with intent classification
 - [x] SSE streaming with citations
 
-### M2 (TaxDome Drive ingestion)
-- [ ] Windows sync agent + ingestion trigger + folder mapping
-- [ ] File watcher with SHA256 dedup
-- [ ] Auto-detect TaxDome Drive root
+### M2 (NAS Sync) — ✅ COMPLETE
+- [x] NAS sync agent with watchdog filesystem monitoring
+- [x] Folder parser for client/case/document extraction
+- [x] LNK parser for client relationships
+- [x] Admin approval queue with auto-approve
+- [x] API endpoints for file events and queue management
+- [x] Admin UI for sync queue management
+- [x] Daily digest email sender
+- [x] 32 unit tests passing
 
-### M3 (Artifacts)
-- [ ] templates + renderer + save artifacts to cases
-- [ ] Missing docs email generation
-- [ ] Organizer checklist generation
+### M3 (Artifacts) — ✅ COMPLETE
+- [x] templates + renderer + save artifacts to cases
+- [x] Missing docs email generation
+- [x] Organizer checklist generation
+- [x] IntakeAgent for LLM-powered analysis
 
-### M4 (Extraction + Notice)
-- [ ] basic W-2/1099 extraction JSON
-- [ ] notice response draft
-- [ ] QC memo generation
+### M4 (Extraction + Notice) — ✅ COMPLETE
+- [x] W-2/1099/K-1 extraction with confidence scoring
+- [x] Notice response drafting (CP2000, CP501, etc.)
+- [x] QC memo generation with checklists
+- [x] Auto-extraction worker task
 
 ---
 
-## 13) Notes / Assumptions to Verify
-- TaxDome Drive is available and installed on a dedicated Windows machine
-- TaxDome public API availability is limited; plan assumes Drive-based ingestion
+## 13) Notes / Assumptions
+- NAS is accessible via Docker volume mount or direct filesystem access
+- Client folders follow naming convention: `{code}_{name}` (1xxx=individual, 2xxx=business)
+- Year folders represent tax cases (e.g., `2024/`)
+- `.lnk` shortcuts indicate client relationships (individual→business)
 - Drake integration is file-based (exports/imports), not UI automation
 
 ---
